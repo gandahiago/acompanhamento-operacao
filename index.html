@@ -708,17 +708,17 @@ function indicadores(x){
   var somaAte = function(s){ var t = 0; for (var i = 0; i <= m; i++) t += (s && s[i]) || 0; return t; };
   x.ingAte = somaAte(L.ingresso); x.fatAte = somaAte(L.faturamento); x.cobAte = somaAte(L.cobros);
   var min = E.cfg.min, mr = rotMes(m, at.ano);
-  if (subidas >= 3 && x.dpfA >= min) al.push(['bad', 'DPF antigo subiu ' + subidas + ' meses seguidos (agora ' + brl(x.dpfA) + ')']);
-  else if (x.dpfAd != null && x.dpfAd >= min) al.push(['warn', 'DPF antigo subiu ' + brl(x.dpfAd) + ' em ' + rotMes(mA, at.ano)]);
-  if (x.dpfAmeses != null && x.dpfA != null && x.dpfA >= min && x.dpfAmeses >= 1) al.push([x.dpfAmeses >= 2 ? 'bad' : 'warn', 'DPF antigo equivale a ' + x.dpfAmeses.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mês(es) de ingresso sem faturar']);
-  if (x.dpfAprev != null && x.dpfA != null && x.dpfA - x.dpfAprev >= min) al.push(['warn', 'DPF antigo de ' + rotMes(mA, at.ano) + ' ficou ' + brl(x.dpfA - x.dpfAprev) + ' acima do prometido (' + x.dpfPrevFonte + ')']);
+  if (subidas >= 3 && x.dpfA >= min) al.push(['bad', 'DPF > Corrente subiu ' + subidas + ' meses seguidos (agora ' + brl(x.dpfA) + ')']);
+  else if (x.dpfAd != null && x.dpfAd >= min) al.push(['warn', 'DPF > Corrente subiu ' + brl(x.dpfAd) + ' em ' + rotMes(mA, at.ano)]);
+  if (x.dpfAmeses != null && x.dpfA != null && x.dpfA >= min && x.dpfAmeses >= 1) al.push([x.dpfAmeses >= 2 ? 'bad' : 'warn', 'DPF > Corrente equivale a ' + x.dpfAmeses.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mês(es) de ingresso sem faturar']);
+  if (x.dpfAprev != null && x.dpfA != null && x.dpfA - x.dpfAprev >= min) al.push(['warn', 'DPF > Corrente de ' + rotMes(mA, at.ano) + ' ficou ' + brl(x.dpfA - x.dpfAprev) + ' acima do prometido (' + x.dpfPrevFonte + ')']);
   if (x.dpfParado != null) al.push(['bad', 'DPF parado em ' + rotMes(x.dpfParado, at.ano) + ': ' + brl(L.dpf[x.dpfParado]) + ', igual ao mês anterior e nada faturado']);
   if (x.dpf60 != null && x.dpf60 >= min) al.push([ing3 > 0 && x.dpf60 >= ing3 ? 'bad' : 'warn', brl(x.dpf60) + ' de DPF com mais de 60 dias em ' + rotMes(mF, at.ano) + (x.dpf90 >= min ? ' (' + brl(x.dpf90) + ' com mais de 90)' : '')]);
-  if (x.recSubidas >= 2 && x.recd >= min) al.push(['warn', 'A receber do cliente subiu ' + x.recSubidas + ' meses seguidos (' + brl(x.rec) + ')']);
-  if (x.cartFim != null && x.cartMeses != null && x.cartMeses < 3) al.push([x.cartMeses < 1 ? 'bad' : 'warn', 'Carteira acaba em ' + rotMes(x.cartFim, at.ano) + ' (restam ' + brl(x.cart) + ')']);
-  if (x.M < 0) al.push(['bad', 'Margem do ano negativa (' + brl(x.M) + ')']);
-  if (x.aI.k === 'bad' || x.aI.k === 'warn') al.push([x.aI.k, 'Ingresso do ano ' + sinal(x.aI.d) + ' x PR anterior']);
-  if (x.pI.k === 'bad' || x.pI.k === 'warn') al.push([x.pI.k, 'Ingresso do ano ' + sinal(x.pI.d) + ' (' + pctS(x.pI.p) + ') x POA 26']);
+  if (x.recSubidas >= 2 && x.recd >= min) al.push(['warn', 'Clientes (saldo a receber) subiu ' + x.recSubidas + ' meses seguidos (' + brl(x.rec) + ')']);
+  if (x.cartFim != null && x.cartMeses != null && x.cartMeses < 3) al.push([x.cartMeses < 1 ? 'bad' : 'warn', 'Carteira Operativa acaba em ' + rotMes(x.cartFim, at.ano) + ' (restam ' + brl(x.cart) + ')']);
+  if (x.M < 0) al.push(['bad', 'Margen do ano negativa (' + brl(x.M) + ')']);
+  if (x.aI.k === 'bad' || x.aI.k === 'warn') al.push([x.aI.k, 'Ingresos do ano ' + sinal(x.aI.d) + ' x PR anterior']);
+  if (x.pI.k === 'bad' || x.pI.k === 'warn') al.push([x.pI.k, 'Ingresos do ano ' + sinal(x.pI.d) + ' (' + pctS(x.pI.p) + ') x POA 26']);
   if (x.ult && x.ult.k !== 'ok' && x.ult.k !== 'wait') al.push([x.ult.k, rotMes(x.ult.m, x.ult.res.ano) + ': ingresso ' + sinal(x.ult.ri - x.ult.pi) + ' x previsto']);
   al.sort(function(a, b){ return ORD[a[0]] - ORD[b[0]]; });
   x.alertas = al;
@@ -732,13 +732,13 @@ function desenharCart(xs){
   var s = function(f){ return xs.reduce(function(t, x){ var v = f(x); return t + (v == null || isNaN(v) ? 0 : v); }, 0); };
   var I = s(function(x){ return x.I; }), M = s(function(x){ return x.M; }), D = s(function(x){ return x.dpf; }), DA = s(function(x){ return x.dpfA; }), DAd = s(function(x){ return x.dpfAd; }), R = s(function(x){ return x.rec; }), Rd = s(function(x){ return x.recd; });
   var html = '<div class="kpis">' +
-    '<div class="kpi"><div class="l">DPF total (produzido sem faturar)</div><div class="v">' + brl(D) + '</div></div>' +
-    '<div class="kpi"><div class="l">DPF antigo (meses anteriores)</div><div class="v">' + brl(DA) + '</div><div class="d">' + seta(DAd, true) + ' no último mês</div></div>' +
-    '<div class="kpi"><div class="l">A receber do cliente</div><div class="v">' + brl(R) + '</div><div class="d">' + seta(Rd, true) + ' no último mês</div></div>' +
-    '<div class="kpi"><div class="l">Ingresso do ano · margem</div><div class="v">' + brl(I) + '</div><div class="d">margem ' + brl(M) + ' (' + mpct(M, I) + ')</div></div>' +
+    '<div class="kpi"><div class="l">DPF</div><div class="v">' + brl(D) + '</div></div>' +
+    '<div class="kpi"><div class="l">DPF &gt; Corrente</div><div class="v">' + brl(DA) + '</div><div class="d">' + seta(DAd, true) + ' no último mês</div></div>' +
+    '<div class="kpi"><div class="l">Clientes (saldo a receber)</div><div class="v">' + brl(R) + '</div><div class="d">' + seta(Rd, true) + ' no último mês</div></div>' +
+    '<div class="kpi"><div class="l">Ingresos do ano · Margen</div><div class="v">' + brl(I) + '</div><div class="d">margem ' + brl(M) + ' (' + mpct(M, I) + ')</div></div>' +
     '</div>';
   html += '<div class="card"><div class="tools" style="margin:0 0 10px"><b style="flex:1">Projetos, do mais preocupante para o menos</b><button id="bXlsx">Baixar em Excel</button></div><div class="scroll"><table><thead><tr>' +
-    '<th>Projeto</th><th>Último mês real</th><th>DPF total</th><th>DPF antigo</th><th>DPF antigo no mês</th><th>A receber</th><th>Carteira restante</th><th>Margem % ano</th><th class="l">Pontos de atenção</th></tr></thead><tbody>';
+    '<th>Projeto</th><th>Último mês real</th><th>DPF</th><th>DPF &gt; Corrente</th><th>DPF &gt; Corrente no mês</th><th>Clientes</th><th>Carteira Operativa</th><th>Margen (%) ano</th><th class="l">Pontos de atenção</th></tr></thead><tbody>';
   xs.forEach(function(x){
     html += '<tr class="click" data-c="' + x.c + '"><td class="l"><span class="dot d-' + x.k + '"></span><b>' + esc(x.nome) + '</b> <span class="muted small">' + x.c + '</span><div class="muted small">' + esc(x.gerente) + '</div></td>' +
       '<td>' + (x.mReal >= 0 ? rotMes(x.mReal, x.at.ano) : '—') + '</td>' +
@@ -749,7 +749,7 @@ function desenharCart(xs){
       '<td>' + mpct(x.M, x.I) + '</td>' +
       '<td class="l small">' + (x.alertas.length ? x.alertas.slice(0, 2).map(function(a){ return '<div><span class="dot d-' + a[0] + '"></span>' + esc(a[1]) + '</div>'; }).join('') + (x.alertas.length > 2 ? '<div class="muted">+' + (x.alertas.length - 2) + ' no detalhe</div>' : '') : '<span class="muted">nada a apontar</span>') + '</td></tr>';
   });
-  html += '</tbody></table></div><div class="orig">De onde vem: última fonte de cada projeto (PR do projeto: aba RESUMO; consolidado: aba FC, e Aging_DPF para corrente/antigo), no último mês real. DPF = "(+) DPF"; DPF antigo = "DPF > CORRENTE"; a receber = "DEUDA ACUMULADA"; carteira = "CARTERA". Clique num projeto para ver o mês a mês.</div></div>';
+  html += '</tbody></table></div><div class="orig">De onde vem: última fonte de cada projeto (PR do projeto: aba RESUMO; consolidado: aba FC, e Aging_DPF), no último mês real. Nomes das planilhas: DPF = "(+) DPF" (PR) / "DPF" (FC); DPF &gt; Corrente = "DPF > CORRENTE" (PR) ou DPF − DPF corriente (Aging_DPF); Clientes = "DEUDA ACUMULADA" (PR) / "Clientes" (FC); Carteira Operativa = "CARTERA" (PR) / "Carteira Operativa" (FC). Clique num projeto para ver o mês a mês.</div></div>';
   html += cartaoProjetos();
   document.getElementById('cartOut').innerHTML = html;
   ligarProjetos();
@@ -767,13 +767,13 @@ function exportarExcel(xs){
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(xs.map(function(x){ return {
     'Código': x.c, 'Projeto': x.nome, 'Gerente OP': x.gerente, 'Situação': SIT[x.k], 'Última fonte': rotPR(x.at), 'Último mês real': x.mReal >= 0 ? rotMes(x.mReal, x.at.ano) : '',
-    'DPF total': Math.round(x.dpf || 0), 'DPF corrente': Math.round(x.dpfC || 0), 'DPF antigo': Math.round(x.dpfA || 0), 'DPF antigo variação no mês': x.dpfAd == null ? '' : Math.round(x.dpfAd), 'Meses seguidos de alta do DPF antigo': x.dpfSubidas || 0,
-    'A receber': Math.round(x.rec || 0), 'A receber variação no mês': x.recd == null ? '' : Math.round(x.recd), 'Carteira restante': Math.round(x.cart || 0),
-    'Ingresso do ano': Math.round(x.I), 'Margem do ano': Math.round(x.M), 'Margem %': x.I > 0 ? Math.round(x.M / x.I * 1000) / 10 : '',
-    'Ingresso x PR anterior': x.aI.d == null ? '' : Math.round(x.aI.d), 'Ingresso x POA 26': x.pI.d == null ? '' : Math.round(x.pI.d),
+    'DPF': Math.round(x.dpf || 0), 'DPF Corrente': Math.round(x.dpfC || 0), 'DPF > Corrente': Math.round(x.dpfA || 0), 'DPF > Corrente variação no mês': x.dpfAd == null ? '' : Math.round(x.dpfAd), 'Meses seguidos de alta do DPF > Corrente': x.dpfSubidas || 0,
+    'Clientes': Math.round(x.rec || 0), 'Clientes variação no mês': x.recd == null ? '' : Math.round(x.recd), 'Carteira Operativa': Math.round(x.cart || 0),
+    'Ingresos do ano': Math.round(x.I), 'Margen do ano': Math.round(x.M), 'Margen (%)': x.I > 0 ? Math.round(x.M / x.I * 1000) / 10 : '',
+    'Ingresos x PR anterior': x.aI.d == null ? '' : Math.round(x.aI.d), 'Ingresos x POA 26': x.pI.d == null ? '' : Math.round(x.pI.d),
     'Pontos de atenção': x.alertas.map(function(a){ return a[1]; }).join(' | '), 'Comentário': E.comAno[x.c] || '', 'Arquivo da PR': x.at.caminho || x.at.arquivo }; })), 'Visão geral');
   xs.forEach(function(x){
-    var L = x.at.linhas, rows = MES.map(function(mm, i){ return { 'Mês': mm, 'Tipo': x.at.flags[i] === 'REAL' ? 'Real' : 'Previsão', 'Ingresso': L.ingresso[i], 'Margem': L.margem[i], 'Faturado': L.faturamento && L.faturamento[i], 'Recebido': L.cobros && L.cobros[i], 'DPF total': L.dpf && L.dpf[i], 'DPF corrente': L.dpfCorrente && L.dpfCorrente[i], 'DPF antigo': L.dpfAntigo && L.dpfAntigo[i], 'A receber': L.aReceber && L.aReceber[i], 'Carteira': L.carteira && L.carteira[i] }; });
+    var L = x.at.linhas, rows = MES.map(function(mm, i){ return { 'Mês': mm, 'Tipo': x.at.flags[i] === 'REAL' ? 'Real' : 'Previsão', 'Ingresos': L.ingresso[i], 'Margen': L.margem[i], 'Facturación': L.faturamento && L.faturamento[i], 'Cobros': L.cobros && L.cobros[i], 'DPF': L.dpf && L.dpf[i], 'DPF Corrente': L.dpfCorrente && L.dpfCorrente[i], 'DPF > Corrente': L.dpfAntigo && L.dpfAntigo[i], 'Clientes': L.aReceber && L.aReceber[i], 'Carteira Operativa': L.carteira && L.carteira[i] }; });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), (x.c + ' ' + x.nome).slice(0, 31).replace(/[\\\/?*\[\]:]/g, ' '));
   });
   XLSX.writeFile(wb, 'Acompanhamento PRs ' + new Date().toISOString().slice(0, 10) + '.xlsx');
@@ -793,7 +793,7 @@ function graficoDPF(x){
   MES.forEach(function(mm, i){
     var cx = pe + cw * i + cw / 2, x0 = cx - bw / 2, real = x.at.flags[i] === 'REAL', op = real ? 1 : 0.45;
     var sep = SA[i] != null, c = sep ? Math.max(0, SC[i] || 0) : 0, a = sep ? Math.max(0, SA[i] || 0) : 0, so = sep ? 0 : Math.max(0, L.dpf[i] || 0);
-    var tip = mm + (real ? ' (real)' : ' (previsão)') + ': DPF ' + (sep ? brl(c + a) + ' = corrente ' + brl(c) + ' + antigo ' + brl(a) : brl(so) + ' (sem separação corrente/antigo nesta fonte)');
+    var tip = mm + (real ? ' (real)' : ' (previsão)') + ': DPF ' + (sep ? brl(c + a) + ' = DPF Corrente ' + brl(c) + ' + DPF > Corrente ' + brl(a) : brl(so) + ' (esta fonte não separa DPF Corrente e DPF > Corrente)');
     if (!sep) { a = so; }
     s += '<g><title>' + esc(tip) + '</title><rect x="' + (cx - cw / 2) + '" y="' + pt + '" width="' + cw + '" height="' + (H - pt - pb) + '" fill="transparent"/>';
     if (a > 0) s += '<rect x="' + x0 + '" y="' + y(a) + '" width="' + bw + '" height="' + Math.max(0, y(0) - y(a)) + '" rx="3" fill="' + (sep ? 'var(--s2)' : 'var(--muted)') + '" opacity="' + (sep ? op : op * 0.5) + '"/>';
@@ -808,7 +808,7 @@ function graficoDPF(x){
 function tabelaIdade(x){
   var ms = Object.keys(x.fx || {}).map(Number).sort(function(a, b){ return a - b; });
   if (!ms.length) return '<div class="orig">Idade do DPF: carregue o Cierre ou a Prévia do Cierre consolidados (aba Aging_DPF) para ver há quanto tempo o DPF está sem faturar.</div>';
-  var cols = [['Do mês', 'corr'], ['1 a 30 dias', 'd30'], ['31 a 60', 'd60'], ['61 a 90', 'd90'], ['91 a 180', 'd180'], ['Mais de 180', 'mais']];
+  var cols = [['Corriente', 'corr'], ['01_30', 'd30'], ['31_60', 'd60'], ['61_90', 'd90'], ['91_180', 'd180'], ['MAS_181', 'mais']];
   var h = '<div style="margin-top:10px"><b class="small">Idade do DPF (há quanto tempo está sem faturar)</b><div class="scroll"><table><thead><tr><th>Mês</th>' + cols.map(function(c){ return '<th>' + c[0] + '</th>'; }).join('') + '<th>Total</th></tr></thead><tbody>';
   ms.forEach(function(mi){ var f = x.fx[mi];
     h += '<tr><td>' + MES[mi] + '</td>' + cols.map(function(c, j){ var v = f[c[1]] || 0; return '<td' + (j >= 3 && v >= E.cfg.min ? ' class="bad"' : '') + '>' + (Math.abs(v) < 1 ? '—' : brl(v)) + '</td>'; }).join('') + '<td><b>' + brl(f.total) + '</b></td></tr>'; });
@@ -827,15 +827,15 @@ function desenharPrev(xs){
       '<div class="meta">' + esc(x.at.titulo || '') + ' · dados até ' + mr + ' (' + esc(rotFonte(x.at)) + ')</div>';
     if (x.alertas.length) html += '<ul style="margin:10px 0 0;padding:0;list-style:none">' + x.alertas.map(function(a){ return '<li style="padding:3px 0"><span class="dot d-' + a[0] + '"></span>' + esc(a[1]) + '</li>'; }).join('') + '</ul>';
     // 1. DPF em 3 números + gráfico
-    html += '<h3 class="sec">DPF: produzido e ainda não faturado</h3><div class="kpis">' +
-      '<div class="kpi"><div class="l">DPF total em ' + mr + '</div><div class="v">' + brl(x.dpf) + '</div></div>' +
-      '<div class="kpi"><div class="l">Parte antiga (de ' + rotMes(x.mA, x.at.ano) + ')</div><div class="v ' + (x.dpfSubidas >= 2 ? 'bad' : '') + '">' + brl(x.dpfA) + '</div><div class="d">' + seta(x.dpfAd, true) + ' no mês' + (x.dpfSubidas >= 2 ? ' · <span class="bad">subindo há ' + x.dpfSubidas + ' meses</span>' : '') + '</div></div>' +
-      '<div class="kpi"><div class="l">Com mais de 60 dias</div><div class="v ' + (x.dpf60 >= E.cfg.min ? 'bad' : '') + '">' + (x.dpf60 != null ? brl(x.dpf60) : '—') + '</div><div class="d">' + (x.mF >= 0 ? 'em ' + rotMes(x.mF, x.at.ano) : 'carregue o Cierre') + '</div></div></div>' +
-      '<div class="small" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:4px"><span><span class="dot" style="background:var(--s1)"></span>do próprio mês</span><span><span class="dot" style="background:var(--s2)"></span>de meses anteriores</span><span class="muted">claro = previsão</span></div>' + graficoDPF(x);
+    html += '<h3 class="sec">DPF (produzido e ainda não faturado)</h3><div class="kpis">' +
+      '<div class="kpi"><div class="l">DPF em ' + mr + '</div><div class="v">' + brl(x.dpf) + '</div></div>' +
+      '<div class="kpi"><div class="l">DPF &gt; Corrente (de ' + rotMes(x.mA, x.at.ano) + ')</div><div class="v ' + (x.dpfSubidas >= 2 ? 'bad' : '') + '">' + brl(x.dpfA) + '</div><div class="d">' + seta(x.dpfAd, true) + ' no mês' + (x.dpfSubidas >= 2 ? ' · <span class="bad">subindo há ' + x.dpfSubidas + ' meses</span>' : '') + '</div></div>' +
+      '<div class="kpi"><div class="l">DPF 61_90 + 91_180 + MAS_181</div><div class="v ' + (x.dpf60 >= E.cfg.min ? 'bad' : '') + '">' + (x.dpf60 != null ? brl(x.dpf60) : '—') + '</div><div class="d">' + (x.mF >= 0 ? 'em ' + rotMes(x.mF, x.at.ano) : 'carregue o Cierre') + '</div></div></div>' +
+      '<div class="small" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:4px"><span><span class="dot" style="background:var(--s1)"></span>DPF Corrente</span><span><span class="dot" style="background:var(--s2)"></span>DPF &gt; Corrente</span><span class="muted">claro = FC (previsão)</span></div><div class="small muted" style="margin-bottom:4px">DPF Corrente = produzido no próprio mês e ainda sem nota. DPF &gt; Corrente = produzido em meses anteriores e ainda sem nota (é o que preocupa).</div><div></div>' + graficoDPF(x);
     // 2. previsto x realizado por mês (colorido)
     var fech = x.ps.filter(function(p){ return p.prev && p.res; });
     if (fech.length) {
-      html += '<h3 class="sec">Prometido x realizado, mês a mês</h3>' + LEGENDA + '<div class="scroll"><table class="cmp3"><thead><tr><th>Mês</th><th>Ingresso prometido</th><th>Realizado</th><th>Diferença</th><th>Margem prometida</th><th>Realizada</th><th>Diferença</th><th class="l">Por que ficou diferente?</th></tr></thead><tbody>';
+      html += '<h3 class="sec">Prometido x realizado, mês a mês</h3>' + LEGENDA + '<div class="scroll"><table class="cmp3"><thead><tr><th>Mês</th><th>Ingresos prometido</th><th>Realizado</th><th>Diferença</th><th>Margen prometida</th><th>Realizada</th><th>Diferença</th><th class="l">Por que ficou diferente?</th></tr></thead><tbody>';
       fech.forEach(function(p){ var jk = x.c + '|' + p.m, jv = E.just[jk] || '', di = corDif(p.pi, p.ri, false), dm = corDif(p.pm, p.rm, false);
         html += '<tr><td class="l">' + MES[p.m] + '<div class="fx">' + esc(rotFonte(p.prev, p.m)) + '</div></td><td>' + brl(p.pi) + '</td><td>' + brl(p.ri) + '</td><td class="' + di.c + '">' + di.t + '</td><td>' + brl(p.pm) + '</td><td>' + brl(p.rm) + '</td><td class="' + dm.c + '">' + dm.t + '</td><td class="l">' + (di.c === 'c-aten' || di.c === 'c-crit' || dm.c === 'c-aten' || dm.c === 'c-crit' || jv ? '<input type="text" class="just" data-j="' + jk + '" value="' + esc(jv) + '" placeholder="Explique a diferença">' : '') + '</td></tr>'; });
       html += '</tbody></table></div>';
@@ -845,11 +845,11 @@ function desenharPrev(xs){
     html += '<button class="link" data-abre="' + x.c + '" style="margin-top:10px">' + (aberto ? 'Esconder números completos ▴' : 'Ver números completos (idade do DPF, mês a mês, carteira, POA) ▾') + '</button>';
     if (aberto) {
       html += tabelaIdade(x);
-      var linhas = [['Ingresso', 'ingresso'], ['Margem', 'margem'], ['Faturado', 'faturamento'], ['Recebido', 'cobros'], ['DPF total', 'dpf'], ['DPF do mês', 'dpfCorrente'], ['DPF antigo', 'dpfAntigo'], ['A receber', 'aReceber'], ['Carteira', 'carteira']];
+      var linhas = [['Ingresos', 'ingresso'], ['Margen', 'margem'], ['Facturación', 'faturamento'], ['Cobros', 'cobros'], ['DPF', 'dpf'], ['DPF Corrente', 'dpfCorrente'], ['DPF > Corrente', 'dpfAntigo'], ['Clientes', 'aReceber'], ['Carteira Operativa', 'carteira']];
       html += '<div class="scroll" style="margin-top:10px"><table><thead><tr><th></th>' + MES.map(function(mm, i){ return '<th' + (x.at.flags[i] === 'REAL' ? '' : ' style="font-style:italic"') + '>' + mm + (x.at.flags[i] === 'REAL' ? '' : '*') + '</th>'; }).join('') + '<th>Ano</th></tr></thead><tbody>' +
         linhas.map(function(l){ return [l[0], l[1] === 'dpfCorrente' ? x.sc.concat([x.sc[11]]) : l[1] === 'dpfAntigo' ? x.sa.concat([x.sa[11]]) : L[l[1]]]; }).filter(function(l){ return l[1]; }).map(function(l){ return '<tr><td class="l"><b>' + l[0] + '</b></td>' + l[1].map(function(v, i){ return '<td' + (i < 12 && x.at.flags[i] !== 'REAL' ? ' class="muted"' : '') + '>' + (v == null || Math.abs(v) < 1 ? '—' : Math.round(v / 1000).toLocaleString('pt-BR')) + '</td>'; }).join('') + '</tr>'; }).join('') +
-        '</tbody></table></div><div class="orig">Valores em R$ mil. * = previsão. "Ano" do DPF, a receber e carteira é a posição de dezembro.</div>';
-      html += '<div class="small" style="margin-top:8px">Carteira em ' + mr + ': <b>' + brl(x.cart) + '</b>' + (x.cartFim != null ? ', acaba em ' + rotMes(x.cartFim, x.at.ano) : '') + '. Ingresso do ano ' + brl(x.I) + ' (' + (x.pI.d != null ? sinal(x.pI.d) + ' x POA 26' : 'sem POA') + ') <button class="link small" data-poa="' + x.c + '">' + (x.poaOrig === 'aba POA' ? '' : x.poa ? 'mudar POA' : 'digitar POA') + '</button>. Margem do ano ' + brl(x.M) + ' (' + mpct(x.M, x.I) + ').</div>';
+        '</tbody></table></div><div class="orig">Valores em R$ mil. * = previsão. "Ano" do DPF, Clientes e Carteira Operativa é a posição de dezembro.</div>';
+      html += '<div class="small" style="margin-top:8px">Carteira Operativa em ' + mr + ': <b>' + brl(x.cart) + '</b>' + (x.cartFim != null ? ', acaba em ' + rotMes(x.cartFim, x.at.ano) : '') + '. Ingresos do ano ' + brl(x.I) + ' (' + (x.pI.d != null ? sinal(x.pI.d) + ' x POA 26' : 'sem POA') + ') <button class="link small" data-poa="' + x.c + '">' + (x.poaOrig === 'aba POA' ? '' : x.poa ? 'mudar POA' : 'digitar POA') + '</button>. Margen do ano ' + brl(x.M) + ' (' + mpct(x.M, x.I) + ').</div>';
     }
     html += '<div class="orig">De onde vem: ' + (x.at.fonte === 'consolidado' ? 'aba FC (e Aging_DPF)' : 'aba RESUMO') + ' de ' + esc(x.at.arquivo) + '.</div></div>';
   });
@@ -868,8 +868,8 @@ function desenharRel(xs){
   var alvo = xs.filter(function(x){ return x.k === 'bad' || x.k === 'warn'; });
   var cnt = { bad: 0, warn: 0, ok: 0, wait: 0 }; xs.forEach(function(x){ cnt[x.k]++; });
   var html = '<div class="card"><h1 style="margin:0">Carteira de projetos · resultado do ano</h1><div class="meta">' + xs.length + ' projetos (' + mesesTxt + ') · gerado em ' + new Date().toLocaleDateString('pt-BR') + '</div>' +
-    '<div class="kpis"><div class="kpi"><div class="l">Ingresso do ano</div><div class="v">' + brl(I) + '</div><div class="d">' + sinal(dI) + ' x mês anterior</div></div>' +
-    '<div class="kpi"><div class="l">Margem do ano</div><div class="v">' + brl(M) + ' · ' + mpct(M, I) + '</div><div class="d">' + sinal(dM) + ' x mês anterior</div></div>' +
+    '<div class="kpis"><div class="kpi"><div class="l">Ingresos do ano</div><div class="v">' + brl(I) + '</div><div class="d">' + sinal(dI) + ' x mês anterior</div></div>' +
+    '<div class="kpi"><div class="l">Margen do ano</div><div class="v">' + brl(M) + ' · ' + mpct(M, I) + '</div><div class="d">' + sinal(dM) + ' x mês anterior</div></div>' +
     '<div class="kpi"><div class="l">Projetos</div><div class="v"><span class="bad">' + cnt.bad + '</span> · <span class="warn">' + cnt.warn + '</span> · <span class="ok">' + cnt.ok + '</span></div><div class="d muted">vermelho · amarelo · verde</div></div></div></div>';
   if (!alvo.length) html += '<div class="card">Nenhum projeto fora da tolerância.</div>';
   alvo.forEach(function(x){
@@ -1050,7 +1050,7 @@ function vSnap(r, k, i, x){
   var s = { ing: L.ingresso, marg: L.margem, fat: L.faturamento, dpf: L.dpf, rec: L.aReceber }[k];
   return s && s[i] != null ? s[i] : null;
 }
-var LIN = [['ing', 'Ingresso', false], ['marg', 'Margem', false], ['mpct', 'Margem %', false], ['fat', 'Faturado', false], ['dpf', 'DPF total', true], ['dpfA', 'DPF antigo', true], ['rec', 'A receber', true]];
+var LIN = [['ing', 'Ingresos', false], ['marg', 'Margen', false], ['mpct', 'Margen (%)', false], ['fat', 'Facturación', false], ['dpf', 'DPF', true], ['dpfA', 'DPF &gt; Corrente', true], ['rec', 'Clientes', true]];
 // cor da diferença: melhor (verde), atenção (amarelo), crítico (vermelho), neutro
 function corDif(ref, val, ruimSubir, ehPct){
   if (ref == null || val == null) return { c: '', t: '—' };
@@ -1133,7 +1133,7 @@ function desenharArq(){
   if (E.ultimosErros && E.ultimosErros.length) html += '<div class="card"><h2>Não deu para ler</h2><ul class="small">' + E.ultimosErros.map(function(e){ return '<li>' + esc(e) + '</li>'; }).join('') + '</ul></div>';
   var semPR = (E.cfg.carteira || []).filter(function(c){ return !g[c]; });
   if (semPR.length && E.cfg.soCarteira) html += '<div class="card"><h2>Carteira sem PR lida (' + semPR.length + ')</h2><div class="small" style="margin-top:6px">' + semPR.map(function(c){ return c + ' ' + esc(NOMES[c] || ''); }).join(' · ') + '</div></div>';
-  html += '<div class="card"><div class="scroll"><table><thead><tr><th>Projeto</th><th>PR</th><th class="l">Arquivo</th><th>Data do arquivo</th><th>Ingresso do ano</th><th>Margem do ano</th><th></th></tr></thead><tbody>';
+  html += '<div class="card"><div class="scroll"><table><thead><tr><th>Projeto</th><th>PR</th><th class="l">Arquivo</th><th>Data do arquivo</th><th>Ingresos do ano</th><th>Margen do ano</th><th></th></tr></thead><tbody>';
   Object.keys(g).sort().forEach(function(c){
     g[c].slice().reverse().forEach(function(r){
       var k = E.retratos.indexOf(r);
