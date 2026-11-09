@@ -357,6 +357,8 @@ function momentoDoNome(n){
   if (/previacierre/.test(s)) return 'Prévia Cierre';
   if (/precierre/.test(s)) return 'PréCierre';
   if (/cierre/.test(s)) return 'Cierre';
+  // "Reporte de Operações ... <MÊS>26" sem o momento no nome é o PréCierre do mês (confirmado pelo Hiago em 09/11 com o arquivo OUT26 -v3)
+  if (/reporte/.test(s)) return 'PréCierre';
   return 'Consolidado';
 }
 function ehConsolidado(XLSX, dados){
