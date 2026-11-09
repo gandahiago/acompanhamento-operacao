@@ -97,6 +97,20 @@ tr.click{cursor:pointer} tr.click:hover td{background:var(--soft)}
 .cal-it .tt{flex:1}
 .cal-it .hr{font-variant-numeric:tabular-nums;color:var(--muted);min-width:44px}
 .prazos li{padding:3px 0}
+.c-bom{background:var(--ok-bg);color:var(--ok);font-weight:600}
+.c-aten{background:var(--warn-bg);color:var(--warn);font-weight:600}
+.c-crit{background:var(--bad-bg);color:var(--bad);font-weight:700}
+.c-neu{color:var(--muted)}
+.legenda{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0}
+.legenda i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line)}
+.legenda i.c-neu{background:var(--card)}
+.cmp3 th{vertical-align:bottom}
+.cmp3 .fx{font-weight:400;font-size:11px;color:var(--muted);white-space:normal;max-width:170px;margin-left:auto}
+.cmp3 td.l .fx{margin-left:0}
+.cmp3 .sep{border-left:2px solid var(--line)}
+.grid1{display:grid;gap:14px}
+.proj{border-left:6px solid var(--line)}
+.proj.st-bom{border-left-color:var(--ok)}.proj.st-aten{border-left-color:var(--warn)}.proj.st-crit{border-left-color:var(--bad)}
 .marco{border-left:4px solid var(--line)}
 .marco.feito{border-left-color:var(--ok);opacity:.8}
 .marco.atrasado{border-left-color:var(--bad)}
@@ -799,59 +813,43 @@ function tabelaIdade(x){
   return h + '</tbody></table></div><div class="orig">De onde vem: aba Aging_DPF do Cierre / Prévia do Cierre consolidado. Em vermelho: mais de 60 dias.</div></div>';
 }
 
-// ================= aba Projeto (detalhe) =================
+// ================= aba Detalhes (simples) =================
 var abertos = {};
 function desenharPrev(xs){
   if (!xs.length) { document.getElementById('prevOut').innerHTML = '<div class="empty">Nenhum projeto carregado ou dentro dos filtros.</div>'; return; }
   var html = '';
   xs.forEach(function(x){
     var L = x.at.linhas, m = x.mReal, mr = m >= 0 ? rotMes(m, x.at.ano) : '—';
-    html += '<div class="card"><div class="marco-top"><h2>' + esc(x.nome) + ' <span class="muted" style="font-weight:400">· ' + x.c + '</span></h2><span class="pill p-' + x.k + '">' + (x.alertas.length ? x.alertas.length + ' ponto' + (x.alertas.length > 1 ? 's' : '') + ' de atenção' : 'Nada a apontar') + '</span></div>' +
-      '<div class="meta">' + esc(x.at.titulo) + ' · ' + esc(x.gerente) + ' · ' + rotPR(x.at) + ' (real até ' + mr + ')</div>';
-    if (x.alertas.length) html += '<ul class="small" style="margin:10px 0 0;padding-left:0;list-style:none">' + x.alertas.map(function(a){ return '<li style="padding:2px 0"><span class="dot d-' + a[0] + '"></span>' + esc(a[1]) + '</li>'; }).join('') + '</ul>';
-    // DPF
-    html += '<h3 class="sec">1. DPF: o que já foi produzido e ainda não foi faturado</h3>' +
-      '<div class="kpis"><div class="kpi"><div class="l">DPF total em ' + mr + '</div><div class="v">' + brl(x.dpf) + '</div><div class="d">' + (x.mA === m ? 'corrente ' + brl(x.dpfC) + ' + antigo ' + brl(x.dpfA) : 'separação de ' + mr + ' sai no Cierre') + '</div></div>' +
-      '<div class="kpi"><div class="l">DPF antigo em ' + rotMes(x.mA, x.at.ano) + '</div><div class="v">' + brl(x.dpfA) + '</div><div class="d">' + seta(x.dpfAd, true) + ' x ' + (x.mA > 0 ? MES[x.mA - 1] : 'mês anterior') + (x.dpfSubidas >= 2 ? ' · <span class="bad">' + x.dpfSubidas + ' meses subindo</span>' : '') + '</div></div>' +
-      '<div class="kpi"><div class="l">Prometido para ' + rotMes(x.mA, x.at.ano) + '</div><div class="v">' + (x.dpfAprev != null ? brl(x.dpfAprev) : '—') + '</div><div class="d">' + (x.dpfAprev != null ? 'antigo, ' + esc(x.dpfPrevFonte) + '; ficou ' + seta(x.dpfA == null ? null : x.dpfA - x.dpfAprev, true) : 'carregue a PR do mês anterior') + '</div></div>' +
-      '<div class="kpi"><div class="l">Previsão para dez</div><div class="v">' + brl(x.dpfApromDez) + '</div><div class="d">DPF antigo no fim do ano' + (x.dpfApromFonte ? ' (' + esc(x.dpfApromFonte) + ')' : '') + '</div></div></div>' +
-      '<div class="small" style="display:flex;gap:16px;margin-bottom:4px"><span><span class="dot" style="background:var(--s1)"></span>DPF corrente (produção do próprio mês)</span><span><span class="dot" style="background:var(--s2)"></span>DPF antigo (meses anteriores)</span><span class="muted">claro = previsão; cinza = fonte sem a separação</span></div>' +
-      graficoDPF(x) + tabelaIdade(x);
-    // tabela mês a mês
-    var aberto = abertos[x.c];
-    html += '<button class="link" data-abre="' + x.c + '">' + (aberto ? 'Esconder mês a mês ▴' : 'Ver mês a mês (DPF, faturamento, recebimento, carteira) ▾') + '</button>';
-    if (aberto) {
-      var linhas = [['Ingresso', 'ingresso'], ['Faturado', 'faturamento'], ['Recebido', 'cobros'], ['DPF total', 'dpf'], ['DPF corrente', 'dpfCorrente'], ['DPF antigo', 'dpfAntigo'], ['A receber', 'aReceber'], ['Carteira', 'carteira'], ['Margem', 'margem']];
-      html += '<div class="scroll" style="margin-top:8px"><table><thead><tr><th></th>' + MES.map(function(mm, i){ return '<th' + (x.at.flags[i] === 'REAL' ? '' : ' style="font-style:italic"') + '>' + mm + (x.at.flags[i] === 'REAL' ? '' : '*') + '</th>'; }).join('') + '<th>Ano</th></tr></thead><tbody>' +
-        linhas.map(function(l){ return [l[0], l[1] === 'dpfCorrente' ? x.sc.concat([x.sc[11]]) : l[1] === 'dpfAntigo' ? x.sa.concat([x.sa[11]]) : L[l[1]]]; }).filter(function(l){ return l[1]; }).map(function(l){ return '<tr><td class="l"><b>' + l[0] + '</b></td>' + l[1].map(function(v, i){ return '<td' + (i < 12 && x.at.flags[i] !== 'REAL' ? ' class="muted"' : '') + '>' + (v == null || Math.abs(v) < 1 ? '—' : Math.round(v / 1000).toLocaleString('pt-BR')) + '</td>'; }).join('') + '</tr>'; }).join('') +
-        '</tbody></table></div><div class="orig">Valores em R$ mil. * = previsão. "Ano" do DPF, a receber e carteira é a posição de dezembro.</div>';
-    }
-    // faturamento e recebimento
-    html += '<h3 class="sec">2. Faturamento e recebimento (jan até ' + mr + ')</h3><div class="kpis">' +
-      '<div class="kpi"><div class="l">Produzido (ingresso)</div><div class="v">' + brl(x.ingAte) + '</div></div>' +
-      '<div class="kpi"><div class="l">Faturado</div><div class="v">' + brl(x.fatAte) + '</div><div class="d">' + (x.ingAte ? pct(x.fatAte / x.ingAte) + ' do produzido' : '') + '</div></div>' +
-      '<div class="kpi"><div class="l">Recebido</div><div class="v">' + brl(x.cobAte) + '</div><div class="d">' + (x.fatAte ? pct(x.cobAte / x.fatAte) + ' do faturado' : '') + '</div></div>' +
-      '<div class="kpi"><div class="l">A receber do cliente</div><div class="v">' + brl(x.rec) + '</div><div class="d">' + seta(x.recd, true) + ' no mês</div></div></div>';
-    // carteira
-    html += '<h3 class="sec">3. Carteira (contrato que ainda falta produzir)</h3><div class="kpis">' +
-      '<div class="kpi"><div class="l">Carteira em ' + mr + '</div><div class="v">' + brl(x.cart) + '</div><div class="d">' + (x.cartMeses != null ? '≈ ' + x.cartMeses.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' meses no ritmo atual' : '') + '</div></div>' +
-      '<div class="kpi"><div class="l">Pela previsão da PR</div><div class="v">' + (x.cartFim != null ? 'acaba em ' + rotMes(x.cartFim, x.at.ano) : 'passa de dez') + '</div><div class="d">ritmo atual: ' + brl(x.ing3) + '/mês</div></div>' +
-      '<div class="kpi"><div class="l">Contratação no ano</div><div class="v">' + brl(L.contratacao ? L.contratacao[12] : null) + '</div></div></div>';
-    // resultado
-    var u = x.ult;
-    html += '<h3 class="sec">4. Resultado: previsto x realizado</h3><div class="kpis">' +
-      '<div class="kpi"><div class="l">Ingresso do ano</div><div class="v">' + brl(x.I) + '</div><div class="d">' + (x.aI.d != null ? sinal(x.aI.d) + ' x PR anterior' : 'sem PR anterior') + '</div></div>' +
-      '<div class="kpi"><div class="l">Margem do ano</div><div class="v">' + brl(x.M) + ' · ' + mpct(x.M, x.I) + '</div><div class="d">' + (x.aM.d != null ? sinal(x.aM.d) + ' x PR anterior' : '') + '</div></div>' +
-      '<div class="kpi"><div class="l">x POA 26</div><div class="v">' + (x.pI.d != null ? sinal(x.pI.d) : '—') + '</div><div class="d">' + (x.poa ? 'POA ' + brl(x.poa.i) + ' (' + x.poaOrig + ')' : '') + ' <button class="link small" data-poa="' + x.c + '">' + (x.poaOrig === 'aba POA' ? '' : x.poa ? 'mudar' : 'digitar POA') + '</button></div></div>' +
-      (u ? '<div class="kpi"><div class="l">' + rotMes(u.m, u.res.ano) + ': previsto → real</div><div class="v">' + sinal(u.ri - u.pi) + '</div><div class="d">ingresso; margem ' + sinal(u.rm - u.pm) + '</div></div>' : '') + '</div>';
+    var st = x.k === 'bad' ? 'crit' : x.k === 'warn' ? 'aten' : 'bom';
+    html += '<div class="card proj st-' + st + '"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill p-' + x.k + '">' + (x.alertas.length ? x.alertas.length + ' ponto' + (x.alertas.length > 1 ? 's' : '') + ' de atenção' : 'Nada a apontar') + '</span></h2>' +
+      '<div class="meta">' + esc(x.at.titulo || '') + ' · dados até ' + mr + ' (' + esc(rotFonte(x.at)) + ')</div>';
+    if (x.alertas.length) html += '<ul style="margin:10px 0 0;padding:0;list-style:none">' + x.alertas.map(function(a){ return '<li style="padding:3px 0"><span class="dot d-' + a[0] + '"></span>' + esc(a[1]) + '</li>'; }).join('') + '</ul>';
+    // 1. DPF em 3 números + gráfico
+    html += '<h3 class="sec">DPF: produzido e ainda não faturado</h3><div class="kpis">' +
+      '<div class="kpi"><div class="l">DPF total em ' + mr + '</div><div class="v">' + brl(x.dpf) + '</div></div>' +
+      '<div class="kpi"><div class="l">Parte antiga (de ' + rotMes(x.mA, x.at.ano) + ')</div><div class="v ' + (x.dpfSubidas >= 2 ? 'bad' : '') + '">' + brl(x.dpfA) + '</div><div class="d">' + seta(x.dpfAd, true) + ' no mês' + (x.dpfSubidas >= 2 ? ' · <span class="bad">subindo há ' + x.dpfSubidas + ' meses</span>' : '') + '</div></div>' +
+      '<div class="kpi"><div class="l">Com mais de 60 dias</div><div class="v ' + (x.dpf60 >= E.cfg.min ? 'bad' : '') + '">' + (x.dpf60 != null ? brl(x.dpf60) : '—') + '</div><div class="d">' + (x.mF >= 0 ? 'em ' + rotMes(x.mF, x.at.ano) : 'carregue o Cierre') + '</div></div></div>' +
+      '<div class="small" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:4px"><span><span class="dot" style="background:var(--s1)"></span>do próprio mês</span><span><span class="dot" style="background:var(--s2)"></span>de meses anteriores</span><span class="muted">claro = previsão</span></div>' + graficoDPF(x);
+    // 2. previsto x realizado por mês (colorido)
     var fech = x.ps.filter(function(p){ return p.prev && p.res; });
     if (fech.length) {
-      html += '<div class="scroll"><table><thead><tr><th>Mês</th><th>Ingresso previsto</th><th>Real</th><th>Diferença</th><th>Margem prevista</th><th>Real</th><th>Diferença</th><th class="l">Justificativa</th></tr></thead><tbody>';
-      fech.forEach(function(p){ var jk = x.c + '|' + p.m, jv = E.just[jk] || '';
-        html += '<tr><td>' + MES[p.m] + '</td><td>' + brl(p.pi) + '</td><td>' + brl(p.ri) + '</td><td class="' + (p.ki === 'ok' ? '' : p.ki) + '">' + sinal(p.ri - p.pi) + '</td><td>' + brl(p.pm) + '</td><td>' + brl(p.rm) + '</td><td class="' + (p.km === 'ok' ? '' : p.km) + '">' + sinal(p.rm - p.pm) + '</td><td class="l">' + (p.k !== 'ok' || jv ? '<input type="text" class="just" data-j="' + jk + '" value="' + esc(jv) + '" placeholder="Por que ficou diferente?">' : '<span class="muted small">dentro</span>') + '</td></tr>'; });
+      html += '<h3 class="sec">Prometido x realizado, mês a mês</h3>' + LEGENDA + '<div class="scroll"><table class="cmp3"><thead><tr><th>Mês</th><th>Ingresso prometido</th><th>Realizado</th><th>Diferença</th><th>Margem prometida</th><th>Realizada</th><th>Diferença</th><th class="l">Por que ficou diferente?</th></tr></thead><tbody>';
+      fech.forEach(function(p){ var jk = x.c + '|' + p.m, jv = E.just[jk] || '', di = corDif(p.pi, p.ri, false), dm = corDif(p.pm, p.rm, false);
+        html += '<tr><td class="l">' + MES[p.m] + '<div class="fx">' + esc(rotFonte(p.prev, p.m)) + '</div></td><td>' + brl(p.pi) + '</td><td>' + brl(p.ri) + '</td><td class="' + di.c + '">' + di.t + '</td><td>' + brl(p.pm) + '</td><td>' + brl(p.rm) + '</td><td class="' + dm.c + '">' + dm.t + '</td><td class="l">' + (di.c === 'c-aten' || di.c === 'c-crit' || dm.c === 'c-aten' || dm.c === 'c-crit' || jv ? '<input type="text" class="just" data-j="' + jk + '" value="' + esc(jv) + '" placeholder="Explique a diferença">' : '') + '</td></tr>'; });
       html += '</tbody></table></div>';
-    } else html += '<div class="small muted">Para comparar previsto e realizado mês a mês, carregue também as PRs dos meses anteriores deste projeto.</div>';
-    html += '<div class="orig">De onde vem: ' + (x.at.fonte === 'consolidado' ? 'aba FC' : 'aba RESUMO') + ' de ' + esc(x.at.arquivo) + '. Previsto = o mês como estava no PréCierre / PR que o previa; realizado = o mesmo mês já fechado (Cierre, Prévia do Cierre ou PR seguinte).</div></div>';
+    }
+    // 3. tudo o resto, escondido
+    var aberto = abertos[x.c];
+    html += '<button class="link" data-abre="' + x.c + '" style="margin-top:10px">' + (aberto ? 'Esconder números completos ▴' : 'Ver números completos (idade do DPF, mês a mês, carteira, POA) ▾') + '</button>';
+    if (aberto) {
+      html += tabelaIdade(x);
+      var linhas = [['Ingresso', 'ingresso'], ['Margem', 'margem'], ['Faturado', 'faturamento'], ['Recebido', 'cobros'], ['DPF total', 'dpf'], ['DPF do mês', 'dpfCorrente'], ['DPF antigo', 'dpfAntigo'], ['A receber', 'aReceber'], ['Carteira', 'carteira']];
+      html += '<div class="scroll" style="margin-top:10px"><table><thead><tr><th></th>' + MES.map(function(mm, i){ return '<th' + (x.at.flags[i] === 'REAL' ? '' : ' style="font-style:italic"') + '>' + mm + (x.at.flags[i] === 'REAL' ? '' : '*') + '</th>'; }).join('') + '<th>Ano</th></tr></thead><tbody>' +
+        linhas.map(function(l){ return [l[0], l[1] === 'dpfCorrente' ? x.sc.concat([x.sc[11]]) : l[1] === 'dpfAntigo' ? x.sa.concat([x.sa[11]]) : L[l[1]]]; }).filter(function(l){ return l[1]; }).map(function(l){ return '<tr><td class="l"><b>' + l[0] + '</b></td>' + l[1].map(function(v, i){ return '<td' + (i < 12 && x.at.flags[i] !== 'REAL' ? ' class="muted"' : '') + '>' + (v == null || Math.abs(v) < 1 ? '—' : Math.round(v / 1000).toLocaleString('pt-BR')) + '</td>'; }).join('') + '</tr>'; }).join('') +
+        '</tbody></table></div><div class="orig">Valores em R$ mil. * = previsão. "Ano" do DPF, a receber e carteira é a posição de dezembro.</div>';
+      html += '<div class="small" style="margin-top:8px">Carteira em ' + mr + ': <b>' + brl(x.cart) + '</b>' + (x.cartFim != null ? ', acaba em ' + rotMes(x.cartFim, x.at.ano) : '') + '. Ingresso do ano ' + brl(x.I) + ' (' + (x.pI.d != null ? sinal(x.pI.d) + ' x POA 26' : 'sem POA') + ') <button class="link small" data-poa="' + x.c + '">' + (x.poaOrig === 'aba POA' ? '' : x.poa ? 'mudar POA' : 'digitar POA') + '</button>. Margem do ano ' + brl(x.M) + ' (' + mpct(x.M, x.I) + ').</div>';
+    }
+    html += '<div class="orig">De onde vem: ' + (x.at.fonte === 'consolidado' ? 'aba FC (e Aging_DPF)' : 'aba RESUMO') + ' de ' + esc(x.at.arquivo) + '.</div></div>';
   });
   document.getElementById('prevOut').innerHTML = html;
   document.querySelectorAll('#prevOut input[data-j]').forEach(function(inp){ inp.onchange = function(){ E.just[inp.dataset.j] = inp.value.trim(); salvar(); desenharAvisos(analisar()); }; });
@@ -1026,32 +1024,65 @@ function baixarIcs(){
   status('Arquivo baixado: abra-o para incluir os ' + lista.length + ' prazos no Outlook (com lembrete 1 dia antes).');
 }
 
-// ================= Resumo do mês (mês passado x mês atual) =================
-function valMes(x, k, i){
-  if (i < 0) return null;
-  var L = x.at.linhas;
-  if (k === 'dpfA') return x.sa ? x.sa[i] : null;
+// ================= Resumo do mês: 3 momentos lado a lado =================
+// Mês passado fechado (Cierre de M-1) · Prometido para M (PréCierre de M) · Realizado em M (Cierre / Prévia do Cierre de M)
+var PREF_PROM = ['PréCierre', 'Prévia PréCierre', 'PR', 'Cierre', 'Prévia Cierre', 'Consolidado'];
+var PREF_REAL = ['Cierre', 'Prévia Cierre', 'PR', 'Consolidado', 'PréCierre', 'Prévia PréCierre'];
+function momentos(x){
+  var m = x.mReal, l = x.lista;
+  var prom = l.filter(function(r){ return mesPR(r) === m && r.flags[m] !== 'REAL' && !r.fcVazio; }).sort(function(a, b){ return PREF_PROM.indexOf(tipo(a)) - PREF_PROM.indexOf(tipo(b)); })[0] || null;
+  var ant = m > 0 ? (l.filter(function(r){ return r.flags[m - 1] === 'REAL'; }).sort(function(a, b){ return (PREF_REAL.indexOf(tipo(a)) - PREF_REAL.indexOf(tipo(b))) || (mesPR(a) - mesPR(b)); })[0] || null) : null;
+  return { m: m, ant: ant, prom: prom, real: x.at };
+}
+function rotFonte(r, m){
+  if (!r) return '';
+  var t = tipo(r), nome = { 'PréCierre': 'PréCierre', 'Prévia PréCierre': 'Prévia do PréCierre', 'Cierre': 'Cierre', 'Prévia Cierre': 'Prévia do Cierre', 'PR': 'PR do projeto', 'Consolidado': 'Consolidado' }[t] || t;
+  var ref = (t === 'Cierre' || t === 'Prévia Cierre') ? mesPR(r) - 1 : mesPR(r);
+  return nome + ' de ' + rotMes(ref, r.ano) + (m != null && r.flags[m] !== 'REAL' && (t === 'Cierre' || t === 'Prévia Cierre') ? ' (previsão de ' + MES[m] + ')' : '');
+}
+function vSnap(r, k, i, x){
+  if (!r || i < 0) return null;
+  var L = r.linhas;
+  if (k === 'mpct') { var a = L.ingresso[i], b = L.margem[i]; return a > 0 ? b / a : null; }
+  if (k === 'dpfA') { if (r.linhas.dpfAntigo && r.linhas.dpfAntigo[i] != null) return r.linhas.dpfAntigo[i]; return r === x.at && x.sa ? x.sa[i] : null; }
   var s = { ing: L.ingresso, marg: L.margem, fat: L.faturamento, dpf: L.dpf, rec: L.aReceber }[k];
   return s && s[i] != null ? s[i] : null;
 }
-var LINHAS_RES = [['ing', 'Ingresso do mês', false], ['marg', 'Margem do mês', false], ['fat', 'Faturado no mês', false], ['dpf', 'DPF total', true], ['dpfA', 'DPF antigo', true], ['rec', 'A receber', true]];
-function difCel(a, b, ruimSubir){
-  if (a == null || b == null) return '<td class="muted">—</td>';
-  var d = b - a; if (Math.abs(d) < 1) return '<td class="muted">igual</td>';
-  var ruim = ruimSubir ? d > 0 : d < 0;
-  return '<td class="' + (ruim ? 'bad' : 'ok') + '">' + (d > 0 ? '▲ ' : '▼ ') + sinal(d) + '</td>';
+var LIN = [['ing', 'Ingresso', false], ['marg', 'Margem', false], ['mpct', 'Margem %', false], ['fat', 'Faturado', false], ['dpf', 'DPF total', true], ['dpfA', 'DPF antigo', true], ['rec', 'A receber', true]];
+// cor da diferença: melhor (verde), atenção (amarelo), crítico (vermelho), neutro
+function corDif(ref, val, ruimSubir, ehPct){
+  if (ref == null || val == null) return { c: '', t: '—' };
+  var d = val - ref, bom = ruimSubir ? d < 0 : d > 0;
+  if (ehPct) {
+    var pp = d * 100, txt = (pp > 0 ? '+' : pp < 0 ? '−' : '') + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.';
+    if (Math.abs(pp) < 0.5) return { c: 'c-neu', t: 'igual' };
+    return { c: bom ? 'c-bom' : Math.abs(pp) > 2 ? 'c-crit' : 'c-aten', t: txt };
+  }
+  if (Math.abs(d) < Math.max(1, E.cfg.min / 2)) return { c: 'c-neu', t: Math.abs(d) < 1 ? 'igual' : sinal(d) };
+  if (bom) return { c: 'c-bom', t: sinal(d) };
+  var p = ref ? Math.abs(d) / Math.abs(ref) : Infinity, tol = E.cfg.tol / 100;
+  if (Math.abs(d) < E.cfg.min || p <= tol) return { c: 'c-neu', t: sinal(d) };
+  return { c: p <= 2 * tol ? 'c-aten' : 'c-crit', t: sinal(d) };
 }
-function tabelaCmp(linhas, mA, mB, extra){
-  var h = '<div class="scroll"><table class="cmp"><thead><tr><th></th><th>' + mA + '</th><th>' + mB + '</th><th>Diferença</th></tr></thead><tbody>';
-  linhas.forEach(function(l){ h += '<tr><td class="l">' + l[0] + '</td><td>' + (l[1] == null ? (l[4] || '—') : brl(l[1])) + '</td><td>' + (l[2] == null ? (l[4] || '—') : brl(l[2])) + '</td>' + difCel(l[1], l[2], l[3]) + '</tr>'; });
-  return h + (extra || '') + '</tbody></table></div>';
+function fmtV(k, v){ return v == null ? '—' : k === 'mpct' ? pct(v) : brl(v); }
+// tabela única: Mês passado | Prometido | Realizado | Realizado x prometido | Realizado x mês passado
+function tabela3(get, m, ano, fontes){
+  var mA = m > 0 ? MES[m - 1] : '—', mB = MES[m];
+  var h = '<div class="scroll"><table class="cmp3"><thead><tr><th></th><th>' + mA + ' fechado<div class="fx">' + esc(fontes.ant) + '</div></th><th>' + mB + ' prometido<div class="fx">' + esc(fontes.prom) + '</div></th><th>' + mB + ' realizado<div class="fx">' + esc(fontes.real) + '</div></th><th class="sep">Realizado x prometido</th><th>' + mB + ' x ' + mA + '</th></tr></thead><tbody>';
+  LIN.forEach(function(l){
+    var a = get('ant', l[0]), p = get('prom', l[0]), r = get('real', l[0]);
+    var d1 = corDif(p, r, l[2], l[0] === 'mpct'), d2 = corDif(a, r, l[2], l[0] === 'mpct');
+    var nota = l[0] === 'dpfA' && r == null ? 'sai no Cierre' : '';
+    h += '<tr><td class="l">' + l[1] + '</td><td>' + fmtV(l[0], a) + '</td><td>' + fmtV(l[0], p) + '</td><td><b>' + (nota || fmtV(l[0], r)) + '</b></td><td class="sep ' + d1.c + '">' + d1.t + '</td><td class="' + d2.c + '">' + d2.t + '</td></tr>';
+  });
+  return h + '</tbody></table></div>';
 }
-function promessa(x){
-  var m = x.mReal, p = (x.ps || []).find(function(p){ return p.m === m && p.prev; });
-  if (!p) return null;
-  var pi = p.prev.linhas.ingresso[m], pm = p.prev.linhas.margem[m], ri = valMes(x, 'ing', m), rm = valMes(x, 'marg', m);
-  return { fonte: rotPR(p.prev), pi: pi, pm: pm, ri: ri, rm: rm };
+function statusRes(get){
+  var ks = [];
+  LIN.forEach(function(l){ var r = get('real', l[0]); ks.push(corDif(get('prom', l[0]), r, l[2], l[0] === 'mpct').c, corDif(get('ant', l[0]), r, l[2], l[0] === 'mpct').c); });
+  return ks.indexOf('c-crit') >= 0 ? 'crit' : ks.indexOf('c-aten') >= 0 ? 'aten' : 'bom';
 }
+var LEGENDA = '<div class="legenda small"><span><i class="c-bom"></i>melhorou</span><span><i class="c-neu"></i>dentro do esperado</span><span><i class="c-aten"></i>atenção (pior até ' + '2× a tolerância)</span><span><i class="c-crit"></i>crítico</span></div>';
 function desenharRes(xs){
   var el = document.getElementById('resOut');
   var prz = proximosPrazos();
@@ -1061,34 +1092,32 @@ function desenharRes(xs){
   else hp += '<ul class="prazos small" style="list-style:none;padding:0;margin:8px 0 0">' + prz.slice(0, 8).map(function(x){ return '<li><span class="dot d-' + ({ atrasado: 'bad', hoje: 'warn', breve: 'warn' }[estadoPrazo(x)] || 'wait') + '"></span><b>' + rotDia(x.data) + (x.hora ? ' ' + x.hora : '') + '</b> · ' + esc(x.t) + ' ' + pillPrazo(x) + '</li>'; }).join('') + (prz.length > 8 ? '<li class="muted">+' + (prz.length - 8) + ' outros</li>' : '') + '</ul>';
   hp += '</div>';
   if (!xs.length) { el.innerHTML = hp + '<div class="empty">Nenhum projeto com dados. Use "Atualizar da pasta" ou arraste as planilhas para a página.</div>'; ligarIr(el); return; }
-  // mês de referência = o mais recente fechado entre os projetos
   var m = Math.max.apply(null, xs.map(function(x){ return x.mReal; })), ano = xs[0].at.ano;
-  var mA = m > 0 ? rotMes(m - 1, ano) : '—', mB = rotMes(m, ano);
   var noMes = xs.filter(function(x){ return x.mReal === m; });
-  var fontes = Array.from(new Set(noMes.map(function(x){ return rotPR(x.at); })));
-  var tot = function(k, i){ var v = noMes.map(function(x){ return valMes(x, k, i); }); return v.every(function(z){ return z == null; }) ? null : v.reduce(function(s, z){ return s + (z || 0); }, 0); };
-  var linhasT = LINHAS_RES.map(function(l){ return [l[1], tot(l[0], m - 1), tot(l[0], m), l[2], l[0] === 'dpfA' ? 'sai no Cierre' : '']; });
-  // promessa total
-  var prs = noMes.map(promessa).filter(Boolean), tp = prs.length ? { pi: prs.reduce(function(s, p){ return s + (p.pi || 0); }, 0), ri: prs.reduce(function(s, p){ return s + (p.ri || 0); }, 0), pm: prs.reduce(function(s, p){ return s + (p.pm || 0); }, 0), rm: prs.reduce(function(s, p){ return s + (p.rm || 0); }, 0) } : null;
-  var h = hp + '<div class="card"><h2>' + mB + ' comparado com ' + mA + '</h2><div class="meta">Mês atual: ' + esc(fontes.join(', ')) + '. Mês passado: o mesmo arquivo, mês anterior já fechado. ' + noMes.length + ' projeto' + (noMes.length > 1 ? 's' : '') + '.</div>' +
-    tabelaCmp(linhasT, mA, mB);
-  if (tp) h += '<div class="prom"><b>O que o último PréCierre prometia para ' + mB + ':</b> ingresso ' + brl(tp.pi) + ', fechou ' + brl(tp.ri) + ' (' + sinal(tp.ri - tp.pi) + '); margem ' + brl(tp.pm) + ', fechou ' + brl(tp.rm) + ' (' + sinal(tp.rm - tp.pm) + ').</div>';
+  var MS = noMes.map(function(x){ return { x: x, mo: momentos(x) }; });
+  var junta = function(f){ var s = {}; MS.forEach(function(o){ var t = f(o.mo); if (t) s[t] = (s[t] || 0) + 1; }); return Object.keys(s).map(function(k){ return k + (MS.length > 1 && s[k] < MS.length ? ' (' + s[k] + ')' : ''); }).join(', ') || 'não carregado'; };
+  var fontesT = { ant: junta(function(mo){ return rotFonte(mo.ant); }), prom: junta(function(mo){ return rotFonte(mo.prom, m); }), real: junta(function(mo){ return rotFonte(mo.real); }) };
+  var getT = function(q, k){
+    if (k === 'mpct') { var i = getT(q, 'ing'), g = getT(q, 'marg'); return i > 0 ? g / i : null; }
+    var vs = MS.map(function(o){ var mm = q === 'ant' ? m - 1 : m; return vSnap(o.mo[q], k, mm, o.x); });
+    return vs.some(function(v){ return v == null; }) ? null : vs.reduce(function(s, v){ return s + v; }, 0);
+  };
+  var faltaPre = MS.filter(function(o){ return !o.mo.prom || tipo(o.mo.prom) !== 'PréCierre'; }).length;
+  var h = hp + '<div class="card"><h2>' + rotMes(m, ano) + ': prometido x realizado, e comparação com ' + (m > 0 ? rotMes(m - 1, ano) : '') + '</h2>' +
+    '<div class="meta">Soma de ' + MS.length + ' projeto' + (MS.length > 1 ? 's' : '') + '. Cada coluna diz de qual arquivo vem.</div>' + LEGENDA + tabela3(getT, m, ano, fontesT);
+  if (faltaPre) h += '<div class="prom">⚠ O "prometido" de ' + faltaPre + ' projeto' + (faltaPre > 1 ? 's' : '') + ' não veio do PréCierre de ' + MES[m] + ', e sim da última previsão disponível (nome na coluna). Carregue o <b>PréCierre de ' + MES[m] + '</b> para comparar com o que foi prometido de fato.</div>';
   h += '<div class="no-print" style="margin-top:10px"><button onclick="window.print()">Imprimir ou salvar em PDF</button></div></div>';
-  // por projeto
-  h += '<div class="grid2">';
-  xs.forEach(function(x){
-    var mm = x.mReal, a = mm > 0 ? rotMes(mm - 1, x.at.ano) : '—', b = rotMes(mm, x.at.ano);
-    var linhas = LINHAS_RES.map(function(l){ return [l[1], valMes(x, l[0], mm - 1), valMes(x, l[0], mm), l[2], l[0] === 'dpfA' ? 'sai no Cierre' : '']; });
-    var extra = '<tr><td class="l">Ingresso do ano*</td><td>' + (x.an ? brl(x.an.linhas.ingresso[12]) : '—') + '</td><td>' + brl(x.I) + '</td>' + difCel(x.an ? x.an.linhas.ingresso[12] : null, x.I, false) + '</tr>' +
-      '<tr><td class="l">Margem do ano*</td><td>' + (x.an ? brl(x.an.linhas.margem[12]) : '—') + '</td><td>' + brl(x.M) + '</td>' + difCel(x.an ? x.an.linhas.margem[12] : null, x.M, false) + '</tr>';
-    var pr = promessa(x);
-    h += '<div class="card proj"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill p-' + x.k + '">' + (x.alertas.length ? x.alertas.length + ' ponto' + (x.alertas.length > 1 ? 's' : '') : 'Tudo certo') + '</span></h2>' +
-      '<div class="meta">' + b + ' x ' + a + ' · fonte: ' + esc(rotPR(x.at)) + (x.an ? '; "ano" do mês passado: ' + esc(rotPR(x.an)) : '') + '</div>' +
-      tabelaCmp(linhas, a, b, extra);
-    h += '<div class="orig">* real + previsão, como estava no arquivo do mês passado e como está agora. DPF total = produzido e ainda não faturado; DPF antigo = a parte que vem de meses anteriores.</div>';
-    if (pr) h += '<div class="prom">' + esc(pr.fonte) + ' prometia para ' + b + ': ingresso ' + brl(pr.pi) + ' → fechou ' + brl(pr.ri) + ' <b class="' + (pr.ri - pr.pi < -1 ? 'bad' : 'ok') + '">' + sinal(pr.ri - pr.pi) + '</b></div>';
-    if (x.alertas.length) h += '<ul class="small" style="margin:10px 0 0;padding:0;list-style:none">' + x.alertas.slice(0, 3).map(function(al){ return '<li style="padding:2px 0"><span class="dot d-' + al[0] + '"></span>' + esc(al[1]) + '</li>'; }).join('') + (x.alertas.length > 3 ? '<li class="muted">+' + (x.alertas.length - 3) + ' nos detalhes</li>' : '') + '</ul>';
-    h += '<button class="link no-print" data-det="' + x.c + '" style="margin-top:8px">Ver detalhes (gráfico, idade do DPF, mês a mês) →</button></div>';
+  h += '<div class="grid1">';
+  MS.forEach(function(o){
+    var x = o.x, mo = o.mo;
+    var get = function(q, k){ var mm = q === 'ant' ? mo.m - 1 : mo.m; return vSnap(mo[q], k, mm, x); };
+    var st = statusRes(get), ka = x.alertas.map(function(a){ return a[0]; });
+    if (ka.indexOf('bad') >= 0) st = 'crit'; else if (ka.indexOf('warn') >= 0 && st === 'bom') st = 'aten';
+    var rot = { bom: 'Tudo certo', aten: 'Atenção', crit: 'Crítico' }[st];
+    h += '<div class="card proj st-' + st + '"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill ' + { bom: 'p-ok', aten: 'p-warn', crit: 'p-bad' }[st] + '">' + rot + '</span></h2>' +
+      tabela3(get, mo.m, x.at.ano, { ant: rotFonte(mo.ant) || 'não carregado', prom: rotFonte(mo.prom, mo.m) || 'não carregado', real: rotFonte(mo.real) });
+    if (x.alertas.length) h += '<ul class="small" style="margin:10px 0 0;padding:0;list-style:none">' + x.alertas.slice(0, 3).map(function(al){ return '<li style="padding:2px 0"><span class="dot d-' + al[0] + '"></span>' + esc(al[1]) + '</li>'; }).join('') + '</ul>';
+    h += '<button class="link no-print" data-det="' + x.c + '" style="margin-top:6px">Ver detalhes do projeto →</button></div>';
   });
   el.innerHTML = h + '</div>';
   ligarIr(el);
