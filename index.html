@@ -166,6 +166,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   <div class="small muted" id="status"></div>
   <nav class="tabs" id="tabs">
    <button data-t="res" class="on">Resumo do mês</button>
+   <button data-t="dpf">Controle de DPF</button>
+   <button data-t="ing">Ingresso e demandas</button>
    <button data-t="cal">Calendário</button>
    <button data-t="prev">Detalhes por projeto</button>
    <button data-t="cart">Projetos</button>
@@ -179,6 +181,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
  <div class="tools" id="filtros"></div>
 
  <section class="panel on" id="p-res"><div id="resOut"></div></section>
+ <section class="panel" id="p-dpf"><div id="dpfOut"></div></section>
+ <section class="panel" id="p-ing"><div id="ingOut"></div></section>
  <section class="panel" id="p-cal">
   <div class="tools no-filter">
    <label class="small">Mês <input type="month" id="mesCal"></label>
@@ -214,6 +218,7 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
  <h3 style="margin-top:0">Ajustes</h3>
  <p class="small muted">Uma diferença só vira alerta quando passa dos dois limites ao mesmo tempo. Amarelo: abaixo da referência entre 1 e 2 vezes a tolerância. Vermelho: mais de 2 vezes.</p>
  <p><label>Tolerância: <input type="number" id="cTol" step="0.5" min="0"> %</label> &nbsp; <label>Valor mínimo: R$ <input type="number" id="cMin" step="1000" min="0"></label></p>
+ <p><label>DPF &gt; Corrente: ignorar até R$ <input type="number" id="cFolga" step="100" min="0"></label> <span class="small muted">(arredondamento; acima disso o projeto fica vermelho no Controle de DPF)</span></p>
  <p><label><input type="checkbox" id="cCart"> Ler só os projetos da minha carteira</label></p>
  <p class="small" style="margin:0 0 4px">Códigos da carteira (um por linha ou separados por vírgula):</p>
  <textarea id="cLista" style="min-height:90px;font-family:monospace;font-size:13px"></textarea>
@@ -224,6 +229,13 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
  <p style="display:flex;gap:8px"><button id="sDef">Definir / trocar senha</button><button id="sTirar">Tirar a senha</button></p>
  <p class="small bad" id="sErro"></p>
  <div style="display:flex;gap:8px;justify-content:flex-end"><button id="cCancel">Cancelar</button><button class="primary" id="cOk">Salvar</button></div>
+</dialog>
+
+<dialog id="dCola">
+ <h3 style="margin-top:0" id="colaT">Colar demandas</h3>
+ <p class="small muted">No Excel, selecione as linhas (sem o cabeçalho) com 3 colunas nesta ordem e copie: <b>Mês do ingresso</b> | <b>Código da demanda</b> | <b>PF</b>. Mês como "nov/26", "11/2026" ou "nov".</p>
+ <textarea id="colaTxt" style="min-height:160px;font-family:monospace;font-size:13px" placeholder="nov/26	DEM-1234	45,5"></textarea>
+ <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button onclick="document.getElementById('dCola').close()">Cancelar</button><button class="primary" id="colaOk">Incluir</button></div>
 </dialog>
 
 <dialog id="dProj">
@@ -265,7 +277,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 var MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 function lerPR(XLSX, dados, info, ano) {
   ano = ano || 2026;
-  var wb = XLSX.read(dados, { type: 'array', sheets: ['RESUMO', 'POA', 'PROJETO'] });
+  var wb = XLSX.read(dados, { type: 'array', sheets: ['RESUMO', 'POA', 'PROJETO', 'INGRESSO'] });
   var ws = wb.Sheets['RESUMO'];
   if (!ws) throw new Error('não tem a aba RESUMO (não parece uma PR)');
   var a = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
@@ -341,7 +353,18 @@ function lerPR(XLSX, dados, info, ano) {
       if (pi && pi[12] !== 0) poa = { ingresso: pi, margem: pm };
     }
   }
+  // aba INGRESSO: PF (col I = QUANTIDADE) e valor do PF (col J = VALOR UNIT) por mês do ano
+  var ingPF = null;
+  if (wb.Sheets['INGRESSO']) {
+    var g = XLSX.utils.sheet_to_json(wb.Sheets['INGRESSO'], { header: 1, raw: true, defval: null });
+    var pf = new Array(12).fill(null), vpf = new Array(12).fill(null), tot = new Array(12).fill(null), achou = false;
+    for (var r5 = 1; r5 < g.length; r5++) { var w = g[r5] || [], mi = MESES.indexOf(txt(w[0]).toUpperCase());
+      if (mi < 0 || Number(w[1]) !== ano) continue; achou = true;
+      pf[mi] = typeof w[8] === 'number' ? w[8] : null; vpf[mi] = typeof w[9] === 'number' ? w[9] : null; tot[mi] = typeof w[11] === 'number' ? w[11] : null; }
+    if (achou) ingPF = { pf: pf, vpf: vpf, tot: tot };
+  }
   return {
+    ingPF: ingPF,
     codigo: codigo, titulo: titulo, gerente: aoLado('Gerente OP'), modificadaEm: aoLado('PR Modificada em'),
     ano: ano, flags: flags, mesPR: primeiroFcst, // mês que esta PR está prevendo (1º FCST); -1 = ano todo real
     linhas: L, poa: poa,
@@ -508,7 +531,7 @@ function decifrar(env, ck){
 }
 function guardado(){ try { return JSON.parse(localStorage.getItem(CHAVE) || 'null'); } catch(x) { return null; } }
 var E = (function(){ var g = guardado(); return g && g.cifra ? completar(base()) : carregar(); })();
-function base(){ return { retratos: [], cfg: { tol: 5, min: 10000, soCarteira: true, soForecast: true, carteira: CARTEIRA_PADRAO.slice() }, poaManual: {}, just: {}, comAno: {}, marcos: {}, cal: [], f: {}, lidos: {}, projetos: {} }; }
+function base(){ return { retratos: [], cfg: { tol: 5, min: 10000, folgaDPF: 1000, soCarteira: true, soForecast: true, carteira: CARTEIRA_PADRAO.slice() }, poaManual: {}, planos: {}, simDPF: {}, medicoes: {}, mri: {}, demandas: {}, demTotal: {}, valorPF: {}, just: {}, comAno: {}, marcos: {}, cal: [], f: {}, lidos: {}, projetos: {} }; }
 function carregar(){
   var e = guardado();
   if (!e || e.cifra) { e = base(); e.retratos = SEED.slice(); }
@@ -605,6 +628,8 @@ function analisar(){
     x.k = pior([x.aI.k, x.aM.k, x.pI.k, x.pM.k, ult ? ult.k : 'wait']);
     x.afast = Math.max.apply(null, [x.aI, x.aM, x.pI, x.pM].map(function(z){ return z.p != null && z.d < 0 ? -z.p : 0; }).concat(ult && ult.pi ? [Math.max(0, (ult.pi - ult.ri) / Math.abs(ult.pi))] : []));
     indicadores(x);
+    controleDPF(x);
+    controleIng(x);
     out.push(x);
   });
   out.sort(function(a,b){ return ORD[a.k] - ORD[b.k] || (b.alertas || []).length - (a.alertas || []).length || (b.dpfA || 0) - (a.dpfA || 0) || a.c.localeCompare(b.c); });
@@ -654,6 +679,10 @@ function desenharAvisos(xs){
   if (breve.length) av.push(['wait', 'Nos próximos 2 dias: ' + breve.map(function(x){ return x.t + ' (' + rotDia(x.data) + ')'; }).join('; '), 'cal']);
   var verm = xs.filter(function(x){ return x.k === 'bad'; });
   if (verm.length) av.push(['bad', verm.length + ' projeto' + (verm.length > 1 ? 's' : '') + ' em vermelho: ' + verm.slice(0, 6).map(function(x){ return x.nome; }).join(', ') + (verm.length > 6 ? '…' : ''), 'cart']);
+  var dsp = xs.filter(function(x){ return x.dpfCtl && x.dpfCtl.k === 'bad'; });
+  if (dsp.length) av.push(['bad', dsp.length + ' projeto' + (dsp.length > 1 ? 's' : '') + ' com DPF acima do corrente sem plano que zere: ' + dsp.slice(0, 6).map(function(x){ return x.nome; }).join(', '), 'dpf']);
+  var dup = xs.filter(function(x){ return x.ingCtl && x.ingCtl.k === 'bad'; });
+  if (dup.length) av.push(['bad', dup.length + ' projeto' + (dup.length > 1 ? 's' : '') + ' com problema de ingresso (demanda duplicada ou acima do contratado): ' + dup.slice(0, 6).map(function(x){ return x.nome; }).join(', '), 'ing']);
   var sj = xs.reduce(function(s, x){ return s + x.semJust; }, 0);
   if (sj) av.push(['warn', sj + ' mês(es) com resultado abaixo do previsto ainda sem justificativa', 'prev']);
   var semPR = (E.cfg.carteira || []).filter(function(c){ return !xs.some(function(x){ return x.c === c; }); });
@@ -857,6 +886,320 @@ function desenharPrev(xs){
   document.querySelectorAll('#prevOut input[data-j]').forEach(function(inp){ inp.onchange = function(){ E.just[inp.dataset.j] = inp.value.trim(); salvar(); desenharAvisos(analisar()); }; });
   document.querySelectorAll('#prevOut [data-abre]').forEach(function(b){ b.onclick = function(){ abertos[b.dataset.abre] = !abertos[b.dataset.abre]; desenharPrev(xs); }; });
   document.querySelectorAll('#prevOut [data-poa]').forEach(function(b){ b.onclick = function(){ digitarPOA(b.dataset.poa); }; });
+}
+
+// ================= aba Controle de DPF (ingresso x faturamento) =================
+// Regra do Hiago (12/11/2026): o DPF de um mês não pode passar do DPF Corrente (o produzido no próprio mês).
+// O que passar é "DPF > Corrente" e precisa sempre de um plano para zerar.
+// Meses reais: números como estão na fonte. Meses de previsão: a página refaz a conta da PR
+// (DPF = DPF do mês anterior + Ingresos − Facturación; Corrente = até o Ingresos do mês; o resto é DPF > Corrente),
+// o que permite testar outro valor de ingresso/faturamento antes de lançar na PR.
+function nnum(s){
+  if (s == null) return null; s = String(s).trim().replace(/[^\d,.\-]/g, ''); if (!s || s === '-') return null;
+  if (s.indexOf(',') >= 0) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  var n = Number(s); return isFinite(n) ? n : null;
+}
+function fmtN(v){ return v == null || isNaN(v) ? '' : (Math.round(v * 100) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtK(v){ return v == null || isNaN(v) || Math.abs(v) < 1 ? '—' : (v < 0 ? '−' : '') + Math.abs(Math.round(v)).toLocaleString('pt-BR'); }
+function contaDPF(x, comPlano){
+  var at = x.at, L = at.linhas, m = x.mReal, sim = E.simDPF[x.c] || {}, plano = E.planos[x.c] || [], out = [], saldo = 0;
+  for (var i = 0; i < 12; i++) {
+    var real = at.flags[i] === 'REAL', s = !real && sim[i] ? sim[i] : {};
+    var ingPR = L.ingresso[i] || 0, fatPR = (L.faturamento && L.faturamento[i]) || 0;
+    var ing = s.i != null ? s.i : ingPR, fat = s.f != null ? s.f : fatPR;
+    var pl = comPlano && !real ? plano.filter(function(p){ return p.mes === i; }).reduce(function(t, p){ return t + (p.valor || 0); }, 0) : 0;
+    var dpf, cor, ant, calc = false;
+    if (real) {
+      dpf = (L.dpf && L.dpf[i]) || 0; saldo = dpf - ((L.alo && L.alo[i]) || 0);
+      var sc = x.sc && x.sc[i], sa = x.sa && x.sa[i];
+      cor = sa != null ? sc : Math.min(Math.max(0, dpf), Math.max(0, ing)); ant = sa != null ? sa : Math.max(0, dpf - cor); var calc = sa == null && dpf > 0;
+    } else {
+      saldo += ing - fat - pl; dpf = Math.max(0, saldo); cor = Math.min(dpf, Math.max(0, ing)); ant = dpf - cor;
+    }
+    out.push({ m: i, real: real, calc: real && calc, ing: ing, fat: fat, pl: pl, dpf: dpf, alo: Math.max(0, -saldo), cor: cor, ant: ant, altI: s.i != null, altF: s.f != null, ingPR: ingPR, fatPR: fatPR });
+  }
+  return out;
+}
+function corDPF(r){ var f = E.cfg.folgaDPF; return r.ant > f ? 'bad' : r.dpf > f ? 'warn' : 'ok'; }
+function controleDPF(x){
+  if (!x.at.linhas.ingresso) return;
+  var m = Math.max(0, x.mReal), sem = contaDPF(x, false), com = contaDPF(x, true), plano = E.planos[x.c] || [], f = E.cfg.folgaDPF;
+  var vig = sem.filter(function(r){ return r.m >= m; }), verm = vig.filter(function(r){ return corDPF(r) === 'bad'; });
+  var pico = verm.reduce(function(a, r){ return !a || r.ant > a.ant ? r : a; }, null);
+  var c = { sem: sem, com: com, m: m, verm: verm, pico: pico, agora: sem[m], plano: plano };
+  c.temPlano = plano.some(function(p){ return (p.acao || '').trim() || p.valor; });
+  // com o plano: a partir de quando o DPF > Corrente fica zerado até dezembro
+  c.zeraEm = null; for (var i = 11; i >= m; i--) { if (com[i].ant > f) break; c.zeraEm = i; }
+  c.sobra = com[11].ant > f ? com[11].ant : 0;
+  var hoje = new Date(), mHoje = hoje.getFullYear() === x.at.ano ? hoje.getMonth() : hoje.getFullYear() > x.at.ano ? 12 : -1;
+  c.atrasadas = plano.filter(function(p){ return !p.feito && p.mes != null && p.mes < mHoje; });
+  var al = [];
+  if (pico) {
+    var prim = verm[0], txt = 'DPF > Corrente de ' + brl(prim.ant) + ' em ' + rotMes(prim.m, x.at.ano) + (pico !== prim ? ' (pico ' + brl(pico.ant) + ' em ' + rotMes(pico.m, x.at.ano) + ')' : '');
+    if (!c.temPlano) { c.k = 'bad'; c.msg = txt + ' e nenhum plano para zerar'; }
+    else if (c.zeraEm == null || c.sobra) { c.k = 'bad'; c.msg = txt + '; o plano não zera (sobram ' + brl(com[11].ant) + ' em dez)'; }
+    else { c.k = 'warn'; c.msg = txt + '; o plano zera em ' + rotMes(c.zeraEm, x.at.ano); }
+    al.push([c.k, c.msg]);
+  } else c.k = sem[m].dpf > f ? 'warn' : 'ok';
+  if (c.atrasadas.length) al.push(['warn', c.atrasadas.length + ' ação(ões) do plano de DPF com mês vencido e não marcada(s) como feita(s)']);
+  x.dpfCtl = c;
+  if (al.length) { x.alertas = (x.alertas || []).concat(al); x.alertas.sort(function(a, b){ return ORD[a[0]] - ORD[b[0]]; }); x.k = pior(x.alertas.map(function(a){ return a[0]; })); }
+}
+var ROT_DPF = { bad: 'DPF acima do corrente', warn: 'DPF só do corrente', ok: 'Sem DPF / ALO' };
+function desenharDPF(xs){
+  var el = document.getElementById('dpfOut'), f = E.cfg.folgaDPF;
+  var ys = xs.filter(function(x){ return x.dpfCtl; }).sort(function(a, b){ return ORD[a.dpfCtl.k] - ORD[b.dpfCtl.k] || (b.dpfCtl.pico ? b.dpfCtl.pico.ant : 0) - (a.dpfCtl.pico ? a.dpfCtl.pico.ant : 0); });
+  if (!ys.length) { el.innerHTML = '<div class="empty">Nenhum projeto com PR lida dentro dos filtros.</div>'; return; }
+  var semPlano = ys.filter(function(x){ return x.dpfCtl.pico && !x.dpfCtl.temPlano; }).length, naoZera = ys.filter(function(x){ return x.dpfCtl.pico && x.dpfCtl.temPlano && x.dpfCtl.k === 'bad'; }).length;
+  var antAgora = ys.reduce(function(t, x){ return t + (x.dpfCtl.agora.ant || 0); }, 0), dpfAgora = ys.reduce(function(t, x){ return t + (x.dpfCtl.agora.dpf || 0); }, 0);
+  var h = '<div class="card"><h2>Controle de DPF: ingresso x faturamento</h2>' +
+    '<div class="small" style="margin-top:6px"><b>Regra:</b> o DPF de cada mês não pode passar do <b>DPF Corrente</b> (o que foi produzido no próprio mês e ainda vai ser faturado). O que passar disso é <b>DPF &gt; Corrente</b>: produção de meses anteriores sem nota. Se aparecer, hoje ou na previsão, o projeto precisa de um <b>plano para zerar</b>.</div>' +
+    '<div class="legenda small"><span><span class="dot d-bad"></span>vermelho: DPF acima do corrente (exige plano)</span><span><span class="dot d-warn"></span>amarelo: DPF, mas só do corrente</span><span><span class="dot d-ok"></span>verde: sem DPF ou com ALO (faturado antes)</span></div>' +
+    '<div class="kpis"><div class="kpi"><div class="l">DPF hoje (último mês real)</div><div class="v">' + brl(dpfAgora) + '</div></div>' +
+    '<div class="kpi"><div class="l">DPF &gt; Corrente hoje</div><div class="v ' + (antAgora > f ? 'bad' : '') + '">' + brl(antAgora) + '</div></div>' +
+    '<div class="kpi"><div class="l">Projetos sem plano</div><div class="v ' + (semPlano ? 'bad' : 'ok') + '">' + semPlano + '</div><div class="d muted">com DPF &gt; Corrente hoje ou na previsão</div></div>' +
+    '<div class="kpi"><div class="l">Planos que não zeram</div><div class="v ' + (naoZera ? 'bad' : 'ok') + '">' + naoZera + '</div><div class="d muted">até dezembro</div></div></div>' +
+    '<div class="small muted">Nos meses de previsão você pode digitar outro Ingresos ou Facturación para testar antes de lançar na PR (campo com borda azul = valor alterado aqui; a PR não muda). Diferenças até ' + brl(f) + ' são ignoradas (arredondamento; muda em Mais → Ajustes).</div></div>';
+  ys.forEach(function(x){
+    var c = x.dpfCtl, ano = x.at.ano, ini = Math.max(0, c.m - 2), ms = []; for (var i = ini; i < 12; i++) ms.push(i);
+    var st = { bad: 'crit', warn: 'aten', ok: 'bom' }[c.k], ag = c.agora;
+    h += '<div class="card proj st-' + st + '"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill p-' + c.k + '">' + ROT_DPF[c.pico ? 'bad' : c.k] + (c.pico ? (c.k === 'warn' ? ' · plano zera' : c.temPlano ? ' · plano não zera' : ' · sem plano') : '') + '</span></h2>' +
+      '<div class="meta">' + esc(x.gerente) + ' · fonte: ' + esc(rotPR(x.at)) + '</div>';
+    // frase de leigo
+    var fr = 'Em ' + rotMes(c.m, ano) + ' (último mês real): ';
+    if (ag.dpf <= f) fr += ag.alo > f ? 'sem DPF; faturado ' + brl(ag.alo) + ' antes de produzir (ALO).' : 'sem DPF.';
+    else fr += 'DPF de ' + brl(ag.dpf) + ', sendo ' + brl(ag.cor) + ' do próprio mês (Corrente)' + (ag.ant > f ? ' e <b class="bad">' + brl(ag.ant) + ' de meses anteriores (DPF &gt; Corrente)</b>.' : ' e nada de meses anteriores.');
+    var vf = c.verm.filter(function(r){ return !r.real; }), pf = vf.reduce(function(a, r){ return !a || r.ant > a.ant ? r : a; }, null);
+    if (pf) fr += ' <br>Pela previsão, ainda fica DPF &gt; Corrente em ' + vf.map(function(r){ return rotMes(r.m, ano) + ' (' + brl(r.ant) + ')'; }).join(', ') + '. Para ficar dentro da regra, é preciso faturar <b>' + brl(vf[0].ant) + ' a mais até ' + rotMes(vf[0].m, ano) + '</b>' + (pf !== vf[0] && pf.ant > vf[0].ant ? ' e chegar a ' + brl(pf.ant) + ' a mais até ' + rotMes(pf.m, ano) : '') + ', além do que já está previsto.';
+    else if (c.pico) fr += ' <br>Pela previsão, o faturamento já previsto zera o DPF &gt; Corrente' + (c.m < 11 ? ' em ' + rotMes(c.m + 1, ano) : '') + '. Mesmo assim, registre no plano quais notas fazem isso, para acompanhar.';
+    else if (c.verm.length === 0 && c.sem.slice(c.m + 1).some(function(r){ return r.dpf > f; })) fr += ' <br>Na previsão o DPF fica só no corrente: dentro da regra.';
+    h += '<div class="prom">' + fr + '</div>';
+    // tabela mês a mês
+    var linha = function(rot, cel, cls){ return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td class="l"><b>' + rot + '</b></td>' + ms.map(cel).join('') + '</tr>'; };
+    var inp = function(r, k){ var alt = k === 'i' ? r.altI : r.altF, v = k === 'i' ? r.ing : r.fat, pr = k === 'i' ? r.ingPR : r.fatPR;
+      return '<td><input type="text" inputmode="decimal" data-sim="' + x.c + '|' + r.m + '|' + k + '" value="' + fmtN(v) + '" style="width:112px;text-align:right' + (alt ? ';border-color:var(--accent);border-width:2px' : '') + '" title="' + (alt ? 'Valor da PR: ' + fmtN(pr) + '. Apague para voltar ao da PR.' : 'Valor da PR. Digite outro para testar.') + '"></td>'; };
+    h += '<div class="scroll" style="margin-top:10px"><table><thead><tr><th>R$</th>' + ms.map(function(i){ return '<th>' + MES[i] + (c.sem[i].real ? ' (real)' + (c.sem[i].calc ? '†' : '') : '*') + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      linha('Ingresos', function(i){ var r = c.sem[i]; return r.real ? '<td>' + fmtK(r.ing) + '</td>' : inp(r, 'i'); }) +
+      linha('Facturación', function(i){ var r = c.sem[i]; return r.real ? '<td>' + fmtK(r.fat) + '</td>' : inp(r, 'f'); }) +
+      linha('DPF (acumulado)', function(i){ var r = c.sem[i]; return '<td>' + (r.dpf <= f && r.alo > f ? '<span class="muted">ALO ' + fmtK(r.alo) + '</span>' : fmtK(r.dpf)) + '</td>'; }) +
+      linha('DPF Corrente', function(i){ return '<td>' + fmtK(c.sem[i].cor) + '</td>'; }) +
+      linha('DPF &gt; Corrente', function(i){ var r = c.sem[i], k = corDPF(r); return '<td class="' + (i < c.m ? '' : k === 'bad' ? 'c-crit' : k === 'warn' ? 'c-aten' : 'c-bom') + '">' + fmtK(r.ant) + '</td>'; }) +
+      linha('Faturar a mais para zerar', function(i){ var r = c.sem[i]; return '<td class="' + (r.ant > f && !r.real ? 'bad' : 'muted') + '">' + (r.ant > f && !r.real ? fmtK(r.ant) : '—') + '</td>'; });
+    if (c.temPlano) h += linha('Faturamento a mais do plano', function(i){ return '<td>' + fmtK(c.com[i].pl) + '</td>'; }, '') +
+      linha('DPF &gt; Corrente com o plano', function(i){ var r = c.com[i], k = corDPF(r); return '<td class="' + (i < c.m ? '' : k === 'bad' ? 'c-crit' : k === 'warn' ? 'c-aten' : 'c-bom') + '">' + fmtK(r.ant) + '</td>'; });
+    h += '</tbody></table></div>';
+    if (ms.some(function(i){ return c.sem[i].calc; })) h += '<div class="small muted">† A fonte deste mês (' + esc(rotPR(x.at)) + ') não separa DPF Corrente e DPF &gt; Corrente: a página separou pela mesma regra da PR (Corrente = até o Ingresos do mês). Confirme quando chegar o Cierre.</div>';
+    if (c.sem.some(function(r){ return r.altI || r.altF; })) h += '<div class="small" style="margin-top:4px"><span class="warn">Há valores digitados aqui que não estão na PR.</span> <button class="link small" data-volta="' + x.c + '">voltar tudo ao da PR</button></div>';
+    // plano para zerar
+    var pl = E.planos[x.c] || [], opMes = function(sel){ var o = ''; for (var j = Math.min(11, c.m + 1); j < 12; j++) o += '<option value="' + j + '"' + (sel === j ? ' selected' : '') + '>' + rotMes(j, ano) + '</option>'; return o; };
+    h += '<h3 class="sec">Plano para zerar o DPF &gt; Corrente' + (c.pico && !c.temPlano ? ' <span class="pill p-bad">obrigatório</span>' : '') + '</h3>';
+    if (!pl.length) h += '<div class="small muted">' + (c.pico ? 'Este projeto tem DPF acima do corrente. Cadastre o que vai ser feito: qual nota, em que mês, de quanto e quem cuida.' : 'Sem DPF acima do corrente: não precisa de plano.') + '</div>';
+    else {
+      h += '<div class="scroll"><table><thead><tr><th class="l">Ação (o que vai ser faturado e como)</th><th>Mês</th><th>Valor a faturar a mais (R$)</th><th class="l">Responsável</th><th>Feito</th><th></th></tr></thead><tbody>';
+      pl.forEach(function(p, j){ var k = x.c + '|' + j, atr = c.atrasadas.indexOf(p) >= 0;
+        h += '<tr><td class="l"><input type="text" data-pl="' + k + '|acao" value="' + esc(p.acao || '') + '" placeholder="ex.: emitir nota da medição de setembro" style="width:100%;min-width:260px"></td>' +
+          '<td><select data-pl="' + k + '|mes">' + opMes(p.mes) + '</select>' + (atr ? '<div class="small bad">vencida</div>' : '') + '</td>' +
+          '<td><input type="text" inputmode="decimal" data-pl="' + k + '|valor" value="' + fmtN(p.valor) + '" style="width:120px;text-align:right"></td>' +
+          '<td class="l"><input type="text" data-pl="' + k + '|resp" value="' + esc(p.resp || '') + '" style="width:150px"></td>' +
+          '<td><input type="checkbox" data-pl="' + k + '|feito"' + (p.feito ? ' checked' : '') + '></td>' +
+          '<td><button class="link small" data-plx="' + k + '" title="Tirar esta ação">✕</button></td></tr>'; });
+      h += '</tbody></table></div>';
+      if (c.pico) h += '<div class="small" style="margin-top:6px">' + (c.k === 'warn' ? '<span class="ok">✓ Com o plano, o DPF &gt; Corrente zera em ' + rotMes(c.zeraEm, ano) + ' e fica zerado até dez.</span>' : '<span class="bad">✗ Com o plano ainda sobram ' + brl(c.com[11].ant) + ' de DPF &gt; Corrente em dez. Aumente o valor ou inclua outra ação.</span>') + '</div>';
+    }
+    if (c.m < 11) h += '<button class="small" data-pladd="' + x.c + '" style="margin-top:8px">+ Ação</button>';
+    h += '<div class="orig">De onde vem: Ingresos = linha VENTAS e Facturación = linha FACTURACIÓN ' + (x.at.fonte === 'consolidado' ? 'da aba FC' : 'da aba RESUMO (na PR, o faturamento é digitado na aba OUTROS_INDICADORES, linha 19)') + ' de ' + esc(x.at.arquivo) + '. Meses reais: DPF, DPF Corrente e DPF &gt; Corrente como estão na fonte. Meses com *: conta feita pela página, igual à da PR (DPF = DPF do mês anterior + Ingresos − Facturación; Corrente = até o Ingresos do mês; o que passar é DPF &gt; Corrente). "Faturar a mais" e o plano são cálculo da página, não vêm da planilha.</div></div>';
+  });
+  el.innerHTML = h;
+  el.querySelectorAll('[data-sim]').forEach(function(inp){ inp.onchange = function(){
+    var a = inp.dataset.sim.split('|'), c = a[0], m = +a[1], k = a[2], v = nnum(inp.value), s = E.simDPF[c] = E.simDPF[c] || {}, o = s[m] = s[m] || {};
+    var x = ys.find(function(y){ return y.c === c; }), pr = k === 'i' ? x.at.linhas.ingresso[m] : (x.at.linhas.faturamento || [])[m];
+    if (v == null || Math.abs(v - (pr || 0)) < 0.01) delete o[k]; else o[k] = v;
+    if (o.i == null && o.f == null) delete s[m];
+    salvar(); desenhar();
+  }; });
+  el.querySelectorAll('[data-volta]').forEach(function(b){ b.onclick = function(){ delete E.simDPF[b.dataset.volta]; salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-pladd]').forEach(function(b){ b.onclick = function(){
+    var c = b.dataset.pladd, x = ys.find(function(y){ return y.c === c; }), d = x.dpfCtl, vfr = d.verm.filter(function(r){ return !r.real; })[0], mes = vfr ? vfr.m : d.m + 1;
+    (E.planos[c] = E.planos[c] || []).push({ acao: '', mes: Math.min(11, mes), valor: (function(){ var r = d.verm.filter(function(r){ return !r.real; })[0]; return r ? Math.round(r.ant * 100) / 100 : null; })(), resp: '', feito: false }); salvar(); desenhar();
+  }; });
+  el.querySelectorAll('[data-plx]').forEach(function(b){ b.onclick = function(){ var a = b.dataset.plx.split('|'); if (!confirm('Tirar esta ação do plano?')) return; E.planos[a[0]].splice(+a[1], 1); if (!E.planos[a[0]].length) delete E.planos[a[0]]; salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-pl]').forEach(function(inp){ inp.onchange = function(){
+    var a = inp.dataset.pl.split('|'), p = E.planos[a[0]][+a[1]], k = a[2];
+    p[k] = k === 'feito' ? inp.checked : k === 'mes' ? +inp.value : k === 'valor' ? nnum(inp.value) : inp.value.trim();
+    salvar(); desenhar();
+  }; });
+}
+
+// ================= aba Controle de ingresso (demandas: mês, código, PF) =================
+// O GP lança cada demanda que vai virar ingresso: mês, código da demanda e PF.
+// A página devolve a previsão (PF × valor do PF) e avisa se aquele código já entrou antes (duplicado),
+// com o mês e o valor, e o saldo de PF quando o PF total da demanda é informado.
+// Também ficam as checagens automáticas sobre a PR: ingresso acima do contratado, valor repetido e regra do MRI (PPT3 s6 e s7).
+var MRIS = ['', 'Faturamento', 'Marcos certificados', 'Cota linear', 'Medição de avanço'];
+function ymRot(ym){ if (!ym) return '?'; return MES[+ym.slice(5, 7) - 1] + '/' + ym.slice(2, 4); }
+function ymDe(s, anoPadrao){
+  s = String(s == null ? '' : s).trim().toLowerCase(); if (!s) return null;
+  var d = s.match(/^(\d{4})-(\d{1,2})/); if (d) return d[1] + '-' + String(+d[2]).padStart(2, '0');
+  var ano = anoPadrao, a = s.match(/(\d{4}|\d{2})\s*$/), m = null;
+  var i = MES.findIndex(function(mm){ return s.indexOf(mm) === 0; });
+  if (i >= 0) { m = i + 1; if (a && s.length > 3) ano = a[1].length === 2 ? 2000 + +a[1] : +a[1]; }
+  else { var n = s.match(/^(\d{1,2})(?:\s*[\/\-.]\s*(\d{2,4}))?$/); if (n) { m = +n[1]; if (n[2]) ano = n[2].length === 2 ? 2000 + +n[2] : +n[2]; } }
+  if (!m || m < 1 || m > 12) return null;
+  return ano + '-' + String(m).padStart(2, '0');
+}
+function ymReal(x, ym){ var a = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1; return a < x.at.ano || (a === x.at.ano && m <= x.mReal); }
+function proximoYm(x){ var m = x.mReal + 1, a = x.at.ano; if (m > 11) { m = 0; a++; } if (m < 0) m = 0; return a + '-' + String(m + 1).padStart(2, '0'); }
+// valor do PF: digitado na página; senão o da PR (aba INGRESSO, coluna VALOR UNIT) do mês; senão o último da PR
+function valorPF(x, ym){
+  var v = (E.valorPF || {})[x.c]; if (v) return { v: v, orig: 'digitado' };
+  var r = x.lista.slice().reverse().find(function(r){ return r.ingPF && r.ingPF.vpf; }); if (!r) return { v: null, orig: '' };
+  var m = ym && +ym.slice(0, 4) === r.ano ? +ym.slice(5, 7) - 1 : -1;
+  if (m >= 0 && r.ingPF.vpf[m] > 1) return { v: r.ingPF.vpf[m], orig: 'PR' };
+  for (var i = 11; i >= 0; i--) if (r.ingPF.vpf[i] > 1) return { v: r.ingPF.vpf[i], orig: 'PR' };
+  return { v: null, orig: '' };
+}
+function codNorm(s){ return String(s || '').trim().toUpperCase().replace(/\s+/g, ' '); }
+// histórico de uma demanda antes de um lançamento (ou de todos)
+function situacaoDemandas(x){
+  var ls = (E.demandas[x.c] || []).map(function(d, i){ return { d: d, i: i }; });
+  ls.sort(function(a, b){ return (a.d.mes || '').localeCompare(b.d.mes || '') || a.i - b.i; });
+  var tot = (E.demTotal[x.c] || {}), porCod = {}, linhas = {};
+  ls.forEach(function(o){
+    var k = codNorm(o.d.cod), g = porCod[k] = porCod[k] || { cod: k, ls: [], pf: 0, valor: 0, total: tot[k] || null };
+    var antes = g.ls.slice(), acum = g.pf + (o.d.pf || 0), vp = valorPF(x, o.d.mes).v, prev = vp && o.d.pf ? o.d.pf * vp : null;
+    var st;
+    if (g.total) st = acum > g.total + 0.001 ? 'duplicada' : acum < g.total - 0.001 ? 'parcial' : 'completa';
+    else st = antes.length ? 'duplicada' : 'ok';
+    var real = o.d.mes ? ymReal(x, o.d.mes) : false;
+    linhas[o.i] = { st: st, antes: antes, real: real, prev: prev, acum: acum, excesso: g.total ? Math.max(0, Math.min(o.d.pf || 0, acum - g.total)) : st === 'duplicada' ? (o.d.pf || 0) : 0 };
+    g.ls.push({ mes: o.d.mes, pf: o.d.pf || 0, prev: prev, i: o.i, real: real }); g.pf = acum; g.valor += prev || 0;
+  });
+  Object.keys(porCod).forEach(function(k){ var g = porCod[k];
+    g.dup = g.ls.some(function(l){ return linhas[l.i].st === 'duplicada'; });
+    g.saldo = g.total ? g.total - g.pf : null;
+    g.st = g.dup ? 'duplicada' : g.total && g.pf < g.total - 0.001 ? 'parcial' : g.ls.every(function(l){ return l.real; }) ? 'ingressada' : 'prevista';
+  });
+  return { porCod: porCod, linhas: linhas };
+}
+var ST_DEM = { duplicada: ['p-bad', 'Duplicada'], parcial: ['p-warn', 'Parcial'], ingressada: ['p-ok', 'Ingressada'], prevista: ['p-wait', 'Prevista'] };
+function controleIng(x){
+  var L = x.at.linhas, ano = x.at.ano, c = { k: 'ok', itens: [], mri: (E.mri || {})[x.c] || '' }, min = E.cfg.min, f = E.cfg.folgaDPF;
+  var add = function(k, t){ c.itens.push([k, t]); };
+  if (L.carteira) { var neg = null; for (var i = 0; i < 12; i++) if (L.carteira[i] < -f) { neg = i; break; }
+    if (neg != null) add('bad', 'Ingresso acima do contratado: a Carteira Operativa fica negativa a partir de ' + rotMes(neg, ano) + (x.at.flags[neg] === 'REAL' ? ' (mês real)' : ' (previsão)') + ', chegando a ' + brl(Math.min.apply(null, L.carteira.slice(0, 12))) + '. Ou falta lançar um aditivo, ou há ingresso a mais.'); }
+  if (c.mri !== 'Cota linear') for (var j = 1; j < 12; j++) { var a = L.ingresso[j], b = L.ingresso[j - 1];
+    if (a >= min && Math.abs(a - b) < 1) add('warn', 'A conferir: Ingresos de ' + rotMes(j, ano) + ' (' + brl(a) + ') é igual ao de ' + rotMes(j - 1, ano) + '. Pode ser cópia do mês anterior.'); }
+  if (c.mri === 'Faturamento' && L.faturamento) for (var k = 0; k < 12; k++) { var d = (L.ingresso[k] || 0) - (L.faturamento[k] || 0);
+    if (Math.abs(d) >= min) add('warn', 'MRI Faturamento: Ingresos de ' + rotMes(k, ano) + ' está ' + sinal(d) + ' diferente da Facturación do mês.'); }
+  c.sd = situacaoDemandas(x);
+  c.dups = Object.keys(c.sd.porCod).filter(function(k){ return c.sd.porCod[k].dup; });
+  if (c.dups.length) add('bad', 'Demanda ingressada duas vezes: ' + c.dups.slice(0, 5).join(', ') + (c.dups.length > 5 ? '…' : ''));
+  c.k = c.itens.some(function(i){ return i[0] === 'bad'; }) ? 'bad' : c.itens.some(function(i){ return i[0] === 'warn'; }) ? 'warn' : 'ok';
+  x.ingCtl = c;
+  var al = c.itens.filter(function(i){ return i[0] === 'bad'; }).map(function(i){ return ['bad', i[1].split(':')[0] + (/duas vezes/.test(i[1]) ? ': ' + c.dups.slice(0, 3).join(', ') : '')]; });
+  if (al.length) { x.alertas = (x.alertas || []).concat(al); x.alertas.sort(function(a, b){ return ORD[a[0]] - ORD[b[0]]; }); x.k = pior(x.alertas.map(function(a){ return a[0]; })); }
+}
+var lancProj = null;
+function previaLanc(xs){
+  var c = document.getElementById('lProj').value, x = xs.find(function(y){ return y.c === c; }), out = document.getElementById('lPrev');
+  if (!x) { out.innerHTML = ''; return; }
+  var ym = document.getElementById('lMes').value, cod = codNorm(document.getElementById('lCod').value), pf = nnum(document.getElementById('lPF').value), vp = valorPF(x, ym);
+  var h = [];
+  if (pf && vp.v) h.push('Previsão de ingresso: <b>' + fmtN(pf) + ' PF × R$ ' + fmtN(vp.v) + ' = ' + brl(pf * vp.v) + '</b> <span class="muted">(valor do PF ' + (vp.orig === 'PR' ? 'da PR, aba INGRESSO' : 'digitado') + ')</span>');
+  else if (pf && !vp.v) h.push('<span class="warn">Informe o valor do PF deste projeto (no cartão do projeto, abaixo) para calcular a previsão.</span>');
+  if (cod) {
+    var sd = x.ingCtl.sd.porCod[cod];
+    if (sd) { var tot = sd.total;
+      h.push('<span class="' + (tot && sd.pf + (pf || 0) <= tot + 0.001 ? 'warn' : 'bad') + '"><b>Atenção: ' + esc(cod) + ' já foi lançada</b> em ' + sd.ls.map(function(l){ return ymRot(l.mes) + ' com ' + fmtN(l.pf) + ' PF' + (l.prev ? ' (' + brl(l.prev) + ')' : '') + (l.real ? ', já ingressada' : ', prevista'); }).join('; ') + '.</span>' +
+        (tot ? ' PF total da demanda: ' + fmtN(tot) + '; saldo antes deste lançamento: <b>' + fmtN(tot - sd.pf) + ' PF</b>' + (pf ? (sd.pf + pf > tot + 0.001 ? ' <b class="bad">(este lançamento passa do total em ' + fmtN(sd.pf + pf - tot) + ' PF)</b>' : ' <span class="ok">(cabe no saldo: entrega parcial)</span>') : '') + '.' : ' Se for entrega parcial, informe o PF total da demanda na lista do projeto; sem isso, conta como duplicada.'));
+    } else h.push('<span class="ok">' + esc(cod) + ' ainda não foi lançada neste projeto.</span>');
+  }
+  out.innerHTML = h.map(function(t){ return '<div>' + t + '</div>'; }).join('');
+}
+function desenharIng(xs){
+  var el = document.getElementById('ingOut');
+  var ys = xs.filter(function(x){ return x.ingCtl; }).sort(function(a, b){ return ORD[a.ingCtl.k] - ORD[b.ingCtl.k] || a.c.localeCompare(b.c); });
+  if (!ys.length) { el.innerHTML = '<div class="empty">Nenhum projeto com PR lida dentro dos filtros.</div>'; return; }
+  if (!lancProj || !ys.some(function(x){ return x.c === lancProj; })) lancProj = (ys.find(function(x){ return (E.demandas[x.c] || []).length; }) || ys[0]).c;
+  var xl = ys.find(function(x){ return x.c === lancProj; });
+  var nDup = ys.reduce(function(t, x){ return t + x.ingCtl.dups.length; }, 0);
+  var h = '<div class="card"><h2>Lançar demanda</h2>' +
+    '<div class="small muted" style="margin-top:4px">Preencha o mês em que a demanda vai virar ingresso, o código e o PF. A página mostra a previsão de ingresso e avisa se esse código já entrou antes.</div>' +
+    '<div class="tools" style="margin:10px 0 0;align-items:flex-end">' +
+    '<label class="small">Projeto<br><select id="lProj">' + ys.map(function(x){ return '<option value="' + x.c + '"' + (x.c === lancProj ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + x.c + '</option>'; }).join('') + '</select></label>' +
+    '<label class="small">Mês do ingresso<br><input type="month" id="lMes" value="' + proximoYm(xl) + '"></label>' +
+    '<label class="small">Código da demanda<br><input type="text" id="lCod" placeholder="ex.: DEM-1234" style="width:160px"></label>' +
+    '<label class="small">PF<br><input type="text" inputmode="decimal" id="lPF" style="width:90px;text-align:right"></label>' +
+    '<button class="primary" id="lOk">Lançar</button><button id="lCola">Colar do Excel</button></div>' +
+    '<div class="prom small" id="lPrev" style="min-height:20px"></div>' +
+    (nDup ? '<div class="small bad" style="margin-top:8px">' + nDup + ' demanda(s) duplicada(s) na carteira. Veja abaixo, em vermelho.</div>' : '') + '</div>';
+  ys.forEach(function(x){
+    var c = x.ingCtl, ano = x.at.ano, L = x.at.linhas, sd = c.sd, st = { bad: 'crit', warn: 'aten', ok: 'bom' }[c.k], dem = E.demandas[x.c] || [], vp = valorPF(x, proximoYm(x));
+    h += '<div class="card proj st-' + st + '"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill p-' + c.k + '">' + { bad: 'Problema', warn: 'A conferir', ok: 'Nada a apontar' }[c.k] + '</span></h2>' +
+      '<div class="meta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:4px"><span>Valor do PF: R$ <input type="text" inputmode="decimal" data-vpf="' + x.c + '" value="' + fmtN((E.valorPF || {})[x.c] || vp.v) + '" style="width:100px;text-align:right"> <span class="small">' + ((E.valorPF || {})[x.c] ? 'digitado' : vp.v ? 'da PR (aba INGRESSO)' : '<span class="warn">informe</span>') + '</span></span>' +
+      '<span>MRI <select data-mri="' + x.c + '">' + MRIS.map(function(m){ return '<option value="' + m + '"' + (m === c.mri ? ' selected' : '') + '>' + (m || 'não informado') + '</option>'; }).join('') + '</select></span></div>';
+    // 1. resumo por mês
+    var meses = {}; dem.forEach(function(d){ if (d.mes) { var g = meses[d.mes] = meses[d.mes] || { n: 0, pf: 0, prev: 0 }; g.n++; g.pf += d.pf || 0; var v = valorPF(x, d.mes).v; g.prev += v && d.pf ? v * d.pf : 0; } });
+    var ks = Object.keys(meses).sort();
+    var rIng = x.lista.slice().reverse().find(function(r){ return r.ingPF; });
+    if (ks.length) {
+      h += '<h3 class="sec">Previsão de ingresso pelas demandas</h3><div class="scroll"><table><thead><tr><th>Mês</th><th>Demandas</th><th>PF lançados</th><th>Previsão (PF × valor)</th><th>PF na PR</th><th>Ingresos na PR</th><th>Diferença PR − demandas</th></tr></thead><tbody>';
+      ks.forEach(function(ym){ var g = meses[ym], a = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1, mesmoAno = a === ano;
+        var ip = mesmoAno ? L.ingresso[m] : null, pfp = rIng && rIng.ano === a ? rIng.ingPF.pf[m] : null, d = ip == null ? null : ip - g.prev;
+        h += '<tr><td>' + ymRot(ym) + (mesmoAno && x.at.flags[m] !== 'REAL' ? '*' : '') + '</td><td>' + g.n + '</td><td>' + fmtN(g.pf) + '</td><td><b>' + brl(g.prev) + '</b></td><td>' + (pfp == null ? '—' : fmtN(pfp)) + '</td><td>' + brl(ip) + '</td><td class="' + (d == null ? '' : d > Math.max(E.cfg.folgaDPF, 1) ? 'c-crit' : d < -Math.max(E.cfg.folgaDPF, 1) ? 'c-aten' : 'c-bom') + '">' + (d == null ? '—' : sinal(d)) + '</td></tr>'; });
+      h += '</tbody></table></div><div class="small muted">Diferença positiva (vermelho): a PR tem ingresso que nenhuma demanda lançada explica. Negativa (amarelo): há demanda lançada que não está na PR. * = previsão.</div>';
+    }
+    // 2. demandas
+    var cods = Object.keys(sd.porCod).sort(function(a, b){ var o = { duplicada: 0, parcial: 1, prevista: 2, ingressada: 3 }; return o[sd.porCod[a].st] - o[sd.porCod[b].st] || a.localeCompare(b); });
+    h += '<h3 class="sec">Demandas</h3>';
+    if (!cods.length) h += '<div class="small muted">Nenhuma demanda lançada ainda. Use "Lançar demanda" no topo.</div>';
+    else {
+      h += '<div class="scroll"><table><thead><tr><th class="l">Código</th><th class="l">Lançamentos (mês: PF)</th><th>PF lançado</th><th>PF total da demanda</th><th>Saldo de PF</th><th>Previsão total</th><th>Situação</th></tr></thead><tbody>';
+      cods.forEach(function(k){ var g = sd.porCod[k], s = ST_DEM[g.st];
+        h += '<tr' + (g.dup ? ' class="c-crit"' : '') + '><td class="l"><b>' + esc(k) + '</b></td><td class="l small">' + g.ls.map(function(l){ var li = sd.linhas[l.i]; return '<span style="white-space:nowrap">' + ymRot(l.mes) + ': ' + fmtN(l.pf) + (li.st === 'duplicada' ? ' <b class="bad">(repetida)</b>' : '') + ' <button class="link small" data-dx="' + x.c + '|' + l.i + '" title="Apagar este lançamento">✕</button></span>'; }).join('<br>') + '</td>' +
+          '<td>' + fmtN(g.pf) + '</td><td><input type="text" inputmode="decimal" data-dtot="' + x.c + '|' + esc(k) + '" value="' + fmtN(g.total) + '" placeholder="opcional" style="width:90px;text-align:right" title="Informe quando a demanda for entregue em partes: aí lançamentos até esse total não contam como duplicados"></td>' +
+          '<td>' + (g.saldo == null ? '—' : '<span class="' + (g.saldo < -0.001 ? 'bad' : '') + '">' + fmtN(g.saldo) + '</span>') + '</td><td>' + brl(g.valor) + '</td><td><span class="pill ' + s[0] + '">' + s[1] + '</span></td></tr>'; });
+      h += '</tbody></table></div><div class="small muted">Prevista = mês do ingresso ainda não fechou. Ingressada = mês já é real na PR. Parcial = falta PF para chegar ao total da demanda. Duplicada = o mesmo código lançado de novo (sem PF total informado) ou passando do total.</div>';
+    }
+    // 3. checagens automáticas
+    var auto = c.itens.filter(function(i){ return !/duas vezes/.test(i[1]); });
+    h += '<h3 class="sec">Checagens na PR</h3>' + (auto.length ? '<ul class="small" style="margin:0;padding:0;list-style:none">' + auto.map(function(i){ return '<li style="padding:3px 0"><span class="dot d-' + i[0] + '"></span>' + esc(i[1]) + '</li>'; }).join('') + '</ul>' : '<div class="small ok">✓ Ingresso dentro do contratado' + (c.mri === 'Cota linear' ? '' : ', sem valor repetido') + (c.mri === 'Faturamento' ? ', igual ao faturamento' : '') + '.</div>');
+    h += '<div class="orig">De onde vem: Ingresos = linha VENTAS e Carteira Operativa = linha CARTERA ' + (x.at.fonte === 'consolidado' ? '(aba FC)' : '(aba RESUMO)') + ' de ' + esc(x.at.arquivo) + '. PF e valor do PF da PR = aba INGRESSO (colunas QUANTIDADE e VALOR UNIT) da última PR do projeto lida' + (rIng ? ' (' + esc(rIng.arquivo) + ')' : ': nenhuma lida ainda, clique em "Atualizar da pasta"') + '. Demandas: lançadas por você. MRI: escolha conforme a aba Dados Identificativos no Minhas Operações (PPT3, slides 6 e 7). Previsão, saldo e situação são cálculo da página.</div></div>';
+  });
+  el.innerHTML = h;
+  var pv = function(){ previaLanc(ys); };
+  ['lMes', 'lCod', 'lPF'].forEach(function(id){ document.getElementById(id).oninput = pv; });
+  document.getElementById('lProj').onchange = function(e){ lancProj = e.target.value; var x = ys.find(function(y){ return y.c === lancProj; }); document.getElementById('lMes').value = proximoYm(x); pv(); };
+  document.getElementById('lOk').onclick = function(){
+    var c = document.getElementById('lProj').value, ym = document.getElementById('lMes').value, cod = codNorm(document.getElementById('lCod').value), pf = nnum(document.getElementById('lPF').value);
+    if (!ym || !cod || !pf) { document.getElementById('lPrev').innerHTML = '<span class="bad">Preencha mês, código e PF.</span>'; return; }
+    var x = ys.find(function(y){ return y.c === c; }), g = x.ingCtl.sd.porCod[cod];
+    if (g && !(g.total && g.pf + pf <= g.total + 0.001) && !confirm(cod + ' já foi lançada (' + g.ls.map(function(l){ return ymRot(l.mes) + ': ' + fmtN(l.pf) + ' PF'; }).join('; ') + '). Lançar mesmo assim? Ela vai ficar marcada como duplicada.')) return;
+    (E.demandas[c] = E.demandas[c] || []).push({ mes: ym, cod: cod, pf: pf, em: new Date().toISOString() });
+    lancProj = c; salvar(); desenhar();
+    status(cod + ' lançada em ' + ymRot(ym) + ' (' + fmtN(pf) + ' PF).');
+    var lc = document.getElementById('lCod'); if (lc) lc.focus();
+  };
+  document.getElementById('lPF').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('lOk').click(); };
+  document.getElementById('lCola').onclick = function(){
+    var c = document.getElementById('lProj').value, x = ys.find(function(y){ return y.c === c; }), dl = document.getElementById('dCola');
+    document.getElementById('colaTxt').value = ''; document.getElementById('colaT').textContent = 'Colar demandas de ' + x.nome + ' (' + c + ')'; dl.showModal();
+    document.getElementById('colaOk').onclick = function(){
+      var t = document.getElementById('colaTxt').value, ruins = 0;
+      var novas = t.split(/\r?\n/).map(function(l){ return l.split('\t'); }).filter(function(p){ return p.join('').trim(); }).map(function(p){
+        var d = { mes: ymDe(p[0], x.at.ano), cod: codNorm(p[1]), pf: nnum(p[2]), em: new Date().toISOString() }; if (!d.mes || !d.cod || !d.pf) { ruins++; return null; } return d; }).filter(Boolean);
+      if (!novas.length) { alert('Não reconheci nenhuma linha. Copie do Excel 3 colunas: Mês | Código | PF.'); return; }
+      E.demandas[c] = (E.demandas[c] || []).concat(novas); dl.close(); lancProj = c; salvar(); desenhar();
+      status(novas.length + ' demanda(s) lançada(s) em ' + c + (ruins ? '; ' + ruins + ' linha(s) ignorada(s) por falta de mês, código ou PF' : '') + '.');
+    };
+  };
+  el.querySelectorAll('[data-mri]').forEach(function(s){ s.onchange = function(){ E.mri[s.dataset.mri] = s.value; if (!s.value) delete E.mri[s.dataset.mri]; salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-vpf]').forEach(function(s){ s.onchange = function(){ var v = nnum(s.value), x = ys.find(function(y){ return y.c === s.dataset.vpf; }); E.valorPF = E.valorPF || {};
+    E.valorPF = E.valorPF || {}; delete E.valorPF[s.dataset.vpf]; var daPR = valorPF(x, proximoYm(x)).v; if (v && Math.abs(v - (daPR || 0)) > 0.001) E.valorPF[s.dataset.vpf] = v; salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-dtot]').forEach(function(s){ s.onchange = function(){ var a = s.dataset.dtot.split('|'), v = nnum(s.value), o = E.demTotal[a[0]] = E.demTotal[a[0]] || {}; if (v) o[a[1]] = v; else delete o[a[1]]; salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-dx]').forEach(function(b){ b.onclick = function(){ var a = b.dataset.dx.split('|'), d = E.demandas[a[0]][+a[1]]; if (!confirm('Apagar o lançamento de ' + d.cod + ' em ' + ymRot(d.mes) + ' (' + fmtN(d.pf) + ' PF)?')) return; E.demandas[a[0]].splice(+a[1], 1); salvar(); desenhar(); }; });
+  previaLanc(ys);
 }
 
 // ================= aba Relatório =================
@@ -1312,7 +1655,7 @@ function irAba(t){
 }
 function desenhar(){
   var todos = analisar(), xs = filtrar(todos);
-  montarFiltros(todos); desenharAvisos(todos); desenharCart(xs); desenharPrev(xs); desenharRel(xs); desenharRes(xs); desenharCal(); desenharArq(); infoPasta();
+  montarFiltros(todos); desenharAvisos(todos); desenharCart(xs); desenharPrev(xs); desenharRel(xs); desenharRes(xs); desenharDPF(xs); desenharIng(xs); desenharCal(); desenharArq(); infoPasta();
 }
 document.getElementById('tabs').onclick = function(ev){ var t = ev.target.dataset.t; if (t) irAba(t); };
 document.getElementById('bAtualizar').onclick = atualizarDaPasta;
@@ -1367,7 +1710,7 @@ document.getElementById('fImp').onchange = function(e){
 };
 var dCfg = document.getElementById('dCfg');
 document.getElementById('bCfg').onclick = function(){
-  document.getElementById('cTol').value = E.cfg.tol; document.getElementById('cMin').value = E.cfg.min;
+  document.getElementById('cTol').value = E.cfg.tol; document.getElementById('cFolga').value = E.cfg.folgaDPF; document.getElementById('cMin').value = E.cfg.min;
   document.getElementById('cCart').checked = E.cfg.soCarteira; document.getElementById('cFc').checked = E.cfg.soForecast;
   document.getElementById('cLista').value = (E.cfg.carteira || []).join(', ');
   document.getElementById('sInfo').textContent = CK ? 'Esta página está protegida por senha. Ela fecha sozinha depois de 20 minutos sem uso.' : 'Sem senha: quem usar este navegador consegue ver os dados. Defina uma senha para guardar os dados criptografados.';
@@ -1376,7 +1719,7 @@ document.getElementById('bCfg').onclick = function(){
 };
 document.getElementById('cCancel').onclick = function(){ dCfg.close(); };
 document.getElementById('cOk').onclick = function(){
-  E.cfg.tol = Math.max(0, +document.getElementById('cTol').value || 0); E.cfg.min = Math.max(0, +document.getElementById('cMin').value || 0);
+  E.cfg.tol = Math.max(0, +document.getElementById('cTol').value || 0); E.cfg.min = Math.max(0, +document.getElementById('cMin').value || 0); E.cfg.folgaDPF = Math.max(0, +document.getElementById('cFolga').value || 0);
   var antes = JSON.stringify([E.cfg.soCarteira, E.cfg.soForecast, E.cfg.carteira]);
   E.cfg.soCarteira = document.getElementById('cCart').checked; E.cfg.soForecast = document.getElementById('cFc').checked;
   E.cfg.carteira = Array.from(new Set((document.getElementById('cLista').value.toUpperCase().match(/\d{2}AP\d{2}/g) || [])));
