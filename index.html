@@ -233,8 +233,8 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
 
 <dialog id="dCola">
  <h3 style="margin-top:0" id="colaT">Colar demandas</h3>
- <p class="small muted">No Excel, selecione as linhas (sem o cabeçalho) com 3 colunas nesta ordem e copie: <b>Mês do ingresso</b> | <b>Código da demanda</b> | <b>PF</b>. Mês como "nov/26", "11/2026" ou "nov".</p>
- <textarea id="colaTxt" style="min-height:160px;font-family:monospace;font-size:13px" placeholder="nov/26	DEM-1234	45,5"></textarea>
+ <p class="small muted">No Excel, selecione as linhas (sem o cabeçalho) com as colunas nesta ordem e copie: <b>Mês do ingresso</b> | <b>Código da demanda</b> | <b>PF estimado</b> | <b>PF detalhado</b> (pode ficar vazia). Mesmo mês e código já lançados são atualizados, não duplicam. Mês como "nov/26", "11/2026" ou "nov".</p>
+ <textarea id="colaTxt" style="min-height:160px;font-family:monospace;font-size:13px" placeholder="nov/26	DEM-1234	45,5	42"></textarea>
  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px"><button onclick="document.getElementById('dCola').close()">Cancelar</button><button class="primary" id="colaOk">Incluir</button></div>
 </dialog>
 
@@ -1059,6 +1059,10 @@ function valorPF(x, ym){
   for (var i = 11; i >= 0; i--) if (r.ingPF.vpf[i] > 1) return { v: r.ingPF.vpf[i], orig: 'PR' };
   return { v: null, orig: '' };
 }
+// PF estimado (contagem do início do mês, quando a PR é enviada) e detalhado (contagem do fechamento); vale o detalhado quando existir
+function pfE(d){ return d.pfEst != null ? d.pfEst : d.pf != null ? d.pf : null; }
+function pfD(d){ return d.pfDet != null ? d.pfDet : null; }
+function pfV(d){ var v = pfD(d); return v != null ? v : (pfE(d) || 0); }
 function codNorm(s){ return String(s || '').trim().toUpperCase().replace(/\s+/g, ' '); }
 // histórico de uma demanda antes de um lançamento (ou de todos)
 function situacaoDemandas(x){
@@ -1067,13 +1071,13 @@ function situacaoDemandas(x){
   var tot = (E.demTotal[x.c] || {}), porCod = {}, linhas = {};
   ls.forEach(function(o){
     var k = codNorm(o.d.cod), g = porCod[k] = porCod[k] || { cod: k, ls: [], pf: 0, valor: 0, total: tot[k] || null };
-    var antes = g.ls.slice(), acum = g.pf + (o.d.pf || 0), vp = valorPF(x, o.d.mes).v, prev = vp && o.d.pf ? o.d.pf * vp : null;
+    var pv = pfV(o.d), antes = g.ls.slice(), acum = g.pf + pv, vp = valorPF(x, o.d.mes).v, prev = vp && pv ? pv * vp : null;
     var st;
     if (g.total) st = acum > g.total + 0.001 ? 'duplicada' : acum < g.total - 0.001 ? 'parcial' : 'completa';
     else st = antes.length ? 'duplicada' : 'ok';
     var real = o.d.mes ? ymReal(x, o.d.mes) : false;
-    linhas[o.i] = { st: st, antes: antes, real: real, prev: prev, acum: acum, excesso: g.total ? Math.max(0, Math.min(o.d.pf || 0, acum - g.total)) : st === 'duplicada' ? (o.d.pf || 0) : 0 };
-    g.ls.push({ mes: o.d.mes, pf: o.d.pf || 0, prev: prev, i: o.i, real: real }); g.pf = acum; g.valor += prev || 0;
+    linhas[o.i] = { st: st, antes: antes, real: real, prev: prev, acum: acum, excesso: g.total ? Math.max(0, Math.min(pv, acum - g.total)) : st === 'duplicada' ? pv : 0 };
+    g.ls.push({ mes: o.d.mes, pf: pv, est: pfE(o.d), det: pfD(o.d), prev: prev, i: o.i, real: real }); g.pf = acum; g.valor += prev || 0;
   });
   Object.keys(porCod).forEach(function(k){ var g = porCod[k];
     g.dup = g.ls.some(function(l){ return linhas[l.i].st === 'duplicada'; });
@@ -1104,18 +1108,37 @@ var lancProj = null;
 function previaLanc(xs){
   var c = document.getElementById('lProj').value, x = xs.find(function(y){ return y.c === c; }), out = document.getElementById('lPrev');
   if (!x) { out.innerHTML = ''; return; }
-  var ym = document.getElementById('lMes').value, cod = codNorm(document.getElementById('lCod').value), pf = nnum(document.getElementById('lPF').value), vp = valorPF(x, ym);
+  var ym = document.getElementById('lMes').value, cod = codNorm(document.getElementById('lCod').value), pfe = nnum(document.getElementById('lPF').value), pfd = nnum(document.getElementById('lPFd').value), pf = pfd != null ? pfd : pfe, vp = valorPF(x, ym);
   var h = [];
-  if (pf && vp.v) h.push('Previsão de ingresso: <b>' + fmtN(pf) + ' PF × R$ ' + fmtN(vp.v) + ' = ' + brl(pf * vp.v) + '</b> <span class="muted">(valor do PF ' + (vp.orig === 'PR' ? 'da PR, aba INGRESSO' : 'digitado') + ')</span>');
+  if (pf && vp.v) {
+    h.push((pfd != null ? 'Ingresso pela contagem detalhada' : 'Previsão de ingresso (contagem estimada)') + ': <b>' + fmtN(pf) + ' PF × R$ ' + fmtN(vp.v) + ' = ' + brl(pf * vp.v) + '</b> <span class="muted">(valor do PF ' + (vp.orig === 'PR' ? 'da PR, aba INGRESSO' : 'digitado') + ')</span>');
+    if (pfd != null && pfe != null && Math.abs(pfd - pfe) > 0.001) h.push('Detalhada x estimada: <b class="' + (pfd < pfe ? 'bad' : 'ok') + '">' + (pfd > pfe ? '+' : '−') + fmtN(Math.abs(pfd - pfe)) + ' PF (' + sinal((pfd - pfe) * vp.v) + ')</b>');
+  }
   else if (pf && !vp.v) h.push('<span class="warn">Informe o valor do PF deste projeto (no cartão do projeto, abaixo) para calcular a previsão.</span>');
   if (cod) {
-    var sd = x.ingCtl.sd.porCod[cod];
-    if (sd) { var tot = sd.total;
+    var sd = x.ingCtl.sd.porCod[cod], mesmo = sd && sd.ls.find(function(l){ return l.mes === ym; });
+    if (mesmo && sd.ls.length === 1) { h.push('<span class="ok">' + esc(cod) + ' já está lançada em ' + ymRot(ym) + ' (estimada ' + fmtN(mesmo.est) + ' PF' + (mesmo.det != null ? ', detalhada ' + fmtN(mesmo.det) + ' PF' : '') + '). Ao lançar, a página <b>atualiza</b> esse lançamento (não duplica).</span>'); sd = null; }
+    else if (mesmo) h.push('<span class="muted">Ao lançar, o lançamento de ' + ymRot(ym) + ' desta demanda é atualizado (não duplica).</span>');
+    if (sd === null) {}
+    else if (sd) { var tot = sd.total;
       h.push('<span class="' + (tot && sd.pf + (pf || 0) <= tot + 0.001 ? 'warn' : 'bad') + '"><b>Atenção: ' + esc(cod) + ' já foi lançada</b> em ' + sd.ls.map(function(l){ return ymRot(l.mes) + ' com ' + fmtN(l.pf) + ' PF' + (l.prev ? ' (' + brl(l.prev) + ')' : '') + (l.real ? ', já ingressada' : ', prevista'); }).join('; ') + '.</span>' +
         (tot ? ' PF total da demanda: ' + fmtN(tot) + '; saldo antes deste lançamento: <b>' + fmtN(tot - sd.pf) + ' PF</b>' + (pf ? (sd.pf + pf > tot + 0.001 ? ' <b class="bad">(este lançamento passa do total em ' + fmtN(sd.pf + pf - tot) + ' PF)</b>' : ' <span class="ok">(cabe no saldo: entrega parcial)</span>') : '') + '.' : ' Se for entrega parcial, informe o PF total da demanda na lista do projeto; sem isso, conta como duplicada.'));
     } else h.push('<span class="ok">' + esc(cod) + ' ainda não foi lançada neste projeto.</span>');
   }
   out.innerHTML = h.map(function(t){ return '<div>' + t + '</div>'; }).join('');
+}
+// mesmo código no mesmo mês = atualiza o lançamento (ex.: chegou a contagem detalhada); outro mês = novo lançamento (pode ser duplicado)
+function lancarDemanda(x, ym, cod, pfe, pfd, perguntar){
+  var L = E.demandas[x.c] = E.demandas[x.c] || [], ex = L.find(function(d){ return d.mes === ym && codNorm(d.cod) === cod; });
+  if (ex) {
+    if (ex.pfEst == null && ex.pf != null) ex.pfEst = ex.pf; delete ex.pf;
+    if (pfe != null) ex.pfEst = pfe; if (pfd != null) ex.pfDet = pfd; ex.atualizadoEm = new Date().toISOString();
+    return cod + ' de ' + ymRot(ym) + ' atualizada: estimada ' + fmtN(pfE(ex)) + ' PF' + (pfD(ex) != null ? ', detalhada ' + fmtN(pfD(ex)) + ' PF (é a que vale)' : '') + '.';
+  }
+  var g = x.ingCtl.sd.porCod[cod], pv = pfd != null ? pfd : pfe;
+  if (perguntar && g && !(g.total && g.pf + pv <= g.total + 0.001) && !confirm(cod + ' já foi lançada (' + g.ls.map(function(l){ return ymRot(l.mes) + ': ' + fmtN(l.pf) + ' PF'; }).join('; ') + '). Lançar mesmo assim em ' + ymRot(ym) + '? Ela vai ficar marcada como duplicada.')) return null;
+  L.push({ mes: ym, cod: cod, pfEst: pfe, pfDet: pfd, em: new Date().toISOString() });
+  return cod + ' lançada em ' + ymRot(ym) + ' (' + (pfd != null ? 'detalhada ' + fmtN(pfd) : 'estimada ' + fmtN(pfe)) + ' PF).';
 }
 function desenharIng(xs){
   var el = document.getElementById('ingOut');
@@ -1125,12 +1148,13 @@ function desenharIng(xs){
   var xl = ys.find(function(x){ return x.c === lancProj; });
   var nDup = ys.reduce(function(t, x){ return t + x.ingCtl.dups.length; }, 0);
   var h = '<div class="card"><h2>Lançar demanda</h2>' +
-    '<div class="small muted" style="margin-top:4px">Preencha o mês em que a demanda vai virar ingresso, o código e o PF. A página mostra a previsão de ingresso e avisa se esse código já entrou antes.</div>' +
+    '<div class="small muted" style="margin-top:4px">Preencha o mês do ingresso, o código e o PF estimado (início do mês, quando a PR é enviada). No fechamento, lance de novo o mesmo mês e código com o PF detalhado: o lançamento é atualizado, não duplica. Quando há detalhada, é ela que vale.</div>' +
     '<div class="tools" style="margin:10px 0 0;align-items:flex-end">' +
     '<label class="small">Projeto<br><select id="lProj">' + ys.map(function(x){ return '<option value="' + x.c + '"' + (x.c === lancProj ? ' selected' : '') + '>' + esc(x.nome) + ' · ' + x.c + '</option>'; }).join('') + '</select></label>' +
     '<label class="small">Mês do ingresso<br><input type="month" id="lMes" value="' + proximoYm(xl) + '"></label>' +
     '<label class="small">Código da demanda<br><input type="text" id="lCod" placeholder="ex.: DEM-1234" style="width:160px"></label>' +
-    '<label class="small">PF<br><input type="text" inputmode="decimal" id="lPF" style="width:90px;text-align:right"></label>' +
+    '<label class="small">PF estimado<br><input type="text" inputmode="decimal" id="lPF" style="width:90px;text-align:right" title="Contagem do início do mês, quando a PR é enviada"></label>' +
+    '<label class="small">PF detalhado<br><input type="text" inputmode="decimal" id="lPFd" placeholder="no fechamento" style="width:110px;text-align:right" title="Contagem do fechamento do mês. Quando existir, é ela que vale"></label>' +
     '<button class="primary" id="lOk">Lançar</button><button id="lCola">Colar do Excel</button></div>' +
     '<div class="prom small" id="lPrev" style="min-height:20px"></div>' +
     (nDup ? '<div class="small bad" style="margin-top:8px">' + nDup + ' demanda(s) duplicada(s) na carteira. Veja abaixo, em vermelho.</div>' : '') + '</div>';
@@ -1140,24 +1164,27 @@ function desenharIng(xs){
       '<div class="meta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:4px"><span>Valor do PF: R$ <input type="text" inputmode="decimal" data-vpf="' + x.c + '" value="' + fmtN((E.valorPF || {})[x.c] || vp.v) + '" style="width:100px;text-align:right"> <span class="small">' + ((E.valorPF || {})[x.c] ? 'digitado' : vp.v ? 'da PR (aba INGRESSO)' : '<span class="warn">informe</span>') + '</span></span>' +
       '<span>MRI <select data-mri="' + x.c + '">' + MRIS.map(function(m){ return '<option value="' + m + '"' + (m === c.mri ? ' selected' : '') + '>' + (m || 'não informado') + '</option>'; }).join('') + '</select></span></div>';
     // 1. resumo por mês
-    var meses = {}; dem.forEach(function(d){ if (d.mes) { var g = meses[d.mes] = meses[d.mes] || { n: 0, pf: 0, prev: 0 }; g.n++; g.pf += d.pf || 0; var v = valorPF(x, d.mes).v; g.prev += v && d.pf ? v * d.pf : 0; } });
+    var meses = {}; dem.forEach(function(d){ if (d.mes) { var g = meses[d.mes] = meses[d.mes] || { n: 0, pf: 0, prev: 0, est: 0, det: 0, nDet: 0, vEst: 0 }; var v = valorPF(x, d.mes).v || 0;
+      g.n++; g.pf += pfV(d); g.prev += v * pfV(d); g.est += pfE(d) || 0; g.vEst += v * (pfE(d) || 0); if (pfD(d) != null) { g.nDet++; g.det += pfD(d); } } });
     var ks = Object.keys(meses).sort();
     var rIng = x.lista.slice().reverse().find(function(r){ return r.ingPF; });
     if (ks.length) {
-      h += '<h3 class="sec">Previsão de ingresso pelas demandas</h3><div class="scroll"><table><thead><tr><th>Mês</th><th>Demandas</th><th>PF lançados</th><th>Previsão (PF × valor)</th><th>PF na PR</th><th>Ingresos na PR</th><th>Diferença PR − demandas</th></tr></thead><tbody>';
+      h += '<h3 class="sec">Previsão de ingresso pelas demandas</h3><div class="scroll"><table><thead><tr><th>Mês</th><th>Demandas</th><th>PF estimado</th><th>PF detalhado</th><th>Detalhada − estimada</th><th>PF que vale</th><th>Ingresso (PF que vale × valor)</th><th>PF na PR</th><th>Ingresos na PR</th><th>Diferença PR − demandas</th></tr></thead><tbody>';
       ks.forEach(function(ym){ var g = meses[ym], a = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1, mesmoAno = a === ano;
         var ip = mesmoAno ? L.ingresso[m] : null, pfp = rIng && rIng.ano === a ? rIng.ingPF.pf[m] : null, d = ip == null ? null : ip - g.prev;
-        h += '<tr><td>' + ymRot(ym) + (mesmoAno && x.at.flags[m] !== 'REAL' ? '*' : '') + '</td><td>' + g.n + '</td><td>' + fmtN(g.pf) + '</td><td><b>' + brl(g.prev) + '</b></td><td>' + (pfp == null ? '—' : fmtN(pfp)) + '</td><td>' + brl(ip) + '</td><td class="' + (d == null ? '' : d > Math.max(E.cfg.folgaDPF, 1) ? 'c-crit' : d < -Math.max(E.cfg.folgaDPF, 1) ? 'c-aten' : 'c-bom') + '">' + (d == null ? '—' : sinal(d)) + '</td></tr>'; });
-      h += '</tbody></table></div><div class="small muted">Diferença positiva (vermelho): a PR tem ingresso que nenhuma demanda lançada explica. Negativa (amarelo): há demanda lançada que não está na PR. * = previsão.</div>';
+        var dd = g.nDet ? g.prev - g.vEst : null, dpf = g.nDet ? g.pf - g.est : null;
+        h += '<tr><td>' + ymRot(ym) + (mesmoAno && x.at.flags[m] !== 'REAL' ? '*' : '') + '</td><td>' + g.n + '</td><td>' + fmtN(g.est) + '</td><td>' + (g.nDet ? fmtN(g.det) + (g.nDet < g.n ? '<div class="small muted">' + g.nDet + ' de ' + g.n + ' demandas</div>' : '') : '<span class="muted">—</span>') + '</td>' +
+          '<td class="' + (dd == null || Math.abs(dpf) < 0.001 ? '' : dd < 0 ? 'c-crit' : 'c-bom') + '">' + (dd == null ? '—' : (dpf > 0 ? '+' : dpf < 0 ? '−' : '') + fmtN(Math.abs(dpf)) + ' PF<div class="small">' + sinal(dd) + '</div>') + '</td><td>' + fmtN(g.pf) + '</td><td><b>' + brl(g.prev) + '</b></td><td>' + (pfp == null ? '—' : fmtN(pfp)) + '</td><td>' + brl(ip) + '</td><td class="' + (d == null ? '' : d > Math.max(E.cfg.folgaDPF, 1) ? 'c-crit' : d < -Math.max(E.cfg.folgaDPF, 1) ? 'c-aten' : 'c-bom') + '">' + (d == null ? '—' : sinal(d)) + '</td></tr>'; });
+      h += '</tbody></table></div><div class="small muted">PF que vale = detalhado quando já existe; senão, o estimado. Detalhada − estimada em vermelho: a contagem do fechamento ficou menor que a enviada na PR (ingresso a menos). Diferença PR − demandas positiva (vermelho): a PR tem ingresso que nenhuma demanda explica; negativa (amarelo): há demanda lançada que não está na PR. * = previsão.</div>';
     }
     // 2. demandas
     var cods = Object.keys(sd.porCod).sort(function(a, b){ var o = { duplicada: 0, parcial: 1, prevista: 2, ingressada: 3 }; return o[sd.porCod[a].st] - o[sd.porCod[b].st] || a.localeCompare(b); });
     h += '<h3 class="sec">Demandas</h3>';
     if (!cods.length) h += '<div class="small muted">Nenhuma demanda lançada ainda. Use "Lançar demanda" no topo.</div>';
     else {
-      h += '<div class="scroll"><table><thead><tr><th class="l">Código</th><th class="l">Lançamentos (mês: PF)</th><th>PF lançado</th><th>PF total da demanda</th><th>Saldo de PF</th><th>Previsão total</th><th>Situação</th></tr></thead><tbody>';
+      h += '<div class="scroll"><table><thead><tr><th class="l">Código</th><th class="l">Lançamentos (mês: PF estimado · detalhado)</th><th>PF que vale</th><th>PF total da demanda</th><th>Saldo de PF</th><th>Previsão total</th><th>Situação</th></tr></thead><tbody>';
       cods.forEach(function(k){ var g = sd.porCod[k], s = ST_DEM[g.st];
-        h += '<tr' + (g.dup ? ' class="c-crit"' : '') + '><td class="l"><b>' + esc(k) + '</b></td><td class="l small">' + g.ls.map(function(l){ var li = sd.linhas[l.i]; return '<span style="white-space:nowrap">' + ymRot(l.mes) + ': ' + fmtN(l.pf) + (li.st === 'duplicada' ? ' <b class="bad">(repetida)</b>' : '') + ' <button class="link small" data-dx="' + x.c + '|' + l.i + '" title="Apagar este lançamento">✕</button></span>'; }).join('<br>') + '</td>' +
+        h += '<tr' + (g.dup ? ' class="c-crit"' : '') + '><td class="l"><b>' + esc(k) + '</b></td><td class="l small">' + g.ls.map(function(l){ var li = sd.linhas[l.i]; return '<span style="white-space:nowrap">' + ymRot(l.mes) + ': est. ' + fmtN(l.est) + ' · det. <input type="text" inputmode="decimal" data-ddet="' + x.c + '|' + l.i + '" value="' + fmtN(l.det) + '" placeholder="—" style="width:76px;text-align:right;padding:2px 5px" title="PF da contagem detalhada (fechamento)">' + (li.st === 'duplicada' ? ' <b class="bad">(repetida)</b>' : '') + ' <button class="link small" data-dx="' + x.c + '|' + l.i + '" title="Apagar este lançamento">✕</button></span>'; }).join('<br>') + '</td>' +
           '<td>' + fmtN(g.pf) + '</td><td><input type="text" inputmode="decimal" data-dtot="' + x.c + '|' + esc(k) + '" value="' + fmtN(g.total) + '" placeholder="opcional" style="width:90px;text-align:right" title="Informe quando a demanda for entregue em partes: aí lançamentos até esse total não contam como duplicados"></td>' +
           '<td>' + (g.saldo == null ? '—' : '<span class="' + (g.saldo < -0.001 ? 'bad' : '') + '">' + fmtN(g.saldo) + '</span>') + '</td><td>' + brl(g.valor) + '</td><td><span class="pill ' + s[0] + '">' + s[1] + '</span></td></tr>'; });
       h += '</tbody></table></div><div class="small muted">Prevista = mês do ingresso ainda não fechou. Ingressada = mês já é real na PR. Parcial = falta PF para chegar ao total da demanda. Duplicada = o mesmo código lançado de novo (sem PF total informado) ou passando do total.</div>';
@@ -1169,36 +1196,36 @@ function desenharIng(xs){
   });
   el.innerHTML = h;
   var pv = function(){ previaLanc(ys); };
-  ['lMes', 'lCod', 'lPF'].forEach(function(id){ document.getElementById(id).oninput = pv; });
+  ['lMes', 'lCod', 'lPF', 'lPFd'].forEach(function(id){ document.getElementById(id).oninput = pv; });
   document.getElementById('lProj').onchange = function(e){ lancProj = e.target.value; var x = ys.find(function(y){ return y.c === lancProj; }); document.getElementById('lMes').value = proximoYm(x); pv(); };
   document.getElementById('lOk').onclick = function(){
-    var c = document.getElementById('lProj').value, ym = document.getElementById('lMes').value, cod = codNorm(document.getElementById('lCod').value), pf = nnum(document.getElementById('lPF').value);
-    if (!ym || !cod || !pf) { document.getElementById('lPrev').innerHTML = '<span class="bad">Preencha mês, código e PF.</span>'; return; }
-    var x = ys.find(function(y){ return y.c === c; }), g = x.ingCtl.sd.porCod[cod];
-    if (g && !(g.total && g.pf + pf <= g.total + 0.001) && !confirm(cod + ' já foi lançada (' + g.ls.map(function(l){ return ymRot(l.mes) + ': ' + fmtN(l.pf) + ' PF'; }).join('; ') + '). Lançar mesmo assim? Ela vai ficar marcada como duplicada.')) return;
-    (E.demandas[c] = E.demandas[c] || []).push({ mes: ym, cod: cod, pf: pf, em: new Date().toISOString() });
-    lancProj = c; salvar(); desenhar();
-    status(cod + ' lançada em ' + ymRot(ym) + ' (' + fmtN(pf) + ' PF).');
+    var c = document.getElementById('lProj').value, ym = document.getElementById('lMes').value, cod = codNorm(document.getElementById('lCod').value), pfe = nnum(document.getElementById('lPF').value), pfd = nnum(document.getElementById('lPFd').value);
+    if (!ym || !cod || (pfe == null && pfd == null)) { document.getElementById('lPrev').innerHTML = '<span class="bad">Preencha mês, código e o PF (estimado ou detalhado).</span>'; return; }
+    var r = lancarDemanda(ys.find(function(y){ return y.c === c; }), ym, cod, pfe, pfd, true); if (!r) return;
+    lancProj = c; salvar(); desenhar(); status(r);
     var lc = document.getElementById('lCod'); if (lc) lc.focus();
   };
-  document.getElementById('lPF').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('lOk').click(); };
+  document.getElementById('lPFd').onkeydown = document.getElementById('lPF').onkeydown = function(e){ if (e.key === 'Enter') document.getElementById('lOk').click(); };
   document.getElementById('lCola').onclick = function(){
     var c = document.getElementById('lProj').value, x = ys.find(function(y){ return y.c === c; }), dl = document.getElementById('dCola');
     document.getElementById('colaTxt').value = ''; document.getElementById('colaT').textContent = 'Colar demandas de ' + x.nome + ' (' + c + ')'; dl.showModal();
     document.getElementById('colaOk').onclick = function(){
       var t = document.getElementById('colaTxt').value, ruins = 0;
       var novas = t.split(/\r?\n/).map(function(l){ return l.split('\t'); }).filter(function(p){ return p.join('').trim(); }).map(function(p){
-        var d = { mes: ymDe(p[0], x.at.ano), cod: codNorm(p[1]), pf: nnum(p[2]), em: new Date().toISOString() }; if (!d.mes || !d.cod || !d.pf) { ruins++; return null; } return d; }).filter(Boolean);
-      if (!novas.length) { alert('Não reconheci nenhuma linha. Copie do Excel 3 colunas: Mês | Código | PF.'); return; }
-      E.demandas[c] = (E.demandas[c] || []).concat(novas); dl.close(); lancProj = c; salvar(); desenhar();
-      status(novas.length + ' demanda(s) lançada(s) em ' + c + (ruins ? '; ' + ruins + ' linha(s) ignorada(s) por falta de mês, código ou PF' : '') + '.');
+        var d = { mes: ymDe(p[0], x.at.ano), cod: codNorm(p[1]), e: nnum(p[2]), d: nnum(p[3]) }; if (!d.mes || !d.cod || (d.e == null && d.d == null)) { ruins++; return null; } return d; }).filter(Boolean);
+      if (!novas.length) { alert('Não reconheci nenhuma linha. Copie do Excel: Mês | Código | PF estimado | PF detalhado (opcional).'); return; }
+      var nN = 0, nA = 0; novas.forEach(function(d){ var r = lancarDemanda(x, d.mes, d.cod, d.e, d.d, false); if (/atualizad/.test(r)) nA++; else nN++; });
+      dl.close(); lancProj = c; salvar(); desenhar();
+      status(nN + ' lançamento(s) novo(s) e ' + nA + ' atualizado(s) em ' + c + (ruins ? '; ' + ruins + ' linha(s) ignorada(s) por falta de mês, código ou PF' : '') + '.');
     };
   };
   el.querySelectorAll('[data-mri]').forEach(function(s){ s.onchange = function(){ E.mri[s.dataset.mri] = s.value; if (!s.value) delete E.mri[s.dataset.mri]; salvar(); desenhar(); }; });
   el.querySelectorAll('[data-vpf]').forEach(function(s){ s.onchange = function(){ var v = nnum(s.value), x = ys.find(function(y){ return y.c === s.dataset.vpf; }); E.valorPF = E.valorPF || {};
     E.valorPF = E.valorPF || {}; delete E.valorPF[s.dataset.vpf]; var daPR = valorPF(x, proximoYm(x)).v; if (v && Math.abs(v - (daPR || 0)) > 0.001) E.valorPF[s.dataset.vpf] = v; salvar(); desenhar(); }; });
   el.querySelectorAll('[data-dtot]').forEach(function(s){ s.onchange = function(){ var a = s.dataset.dtot.split('|'), v = nnum(s.value), o = E.demTotal[a[0]] = E.demTotal[a[0]] || {}; if (v) o[a[1]] = v; else delete o[a[1]]; salvar(); desenhar(); }; });
-  el.querySelectorAll('[data-dx]').forEach(function(b){ b.onclick = function(){ var a = b.dataset.dx.split('|'), d = E.demandas[a[0]][+a[1]]; if (!confirm('Apagar o lançamento de ' + d.cod + ' em ' + ymRot(d.mes) + ' (' + fmtN(d.pf) + ' PF)?')) return; E.demandas[a[0]].splice(+a[1], 1); salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-dx]').forEach(function(b){ b.onclick = function(){ var a = b.dataset.dx.split('|'), d = E.demandas[a[0]][+a[1]]; if (!confirm('Apagar o lançamento de ' + d.cod + ' em ' + ymRot(d.mes) + ' (' + fmtN(pfV(d)) + ' PF)?')) return; E.demandas[a[0]].splice(+a[1], 1); salvar(); desenhar(); }; });
+  el.querySelectorAll('[data-ddet]').forEach(function(s){ s.onchange = function(){ var a = s.dataset.ddet.split('|'), d = E.demandas[a[0]][+a[1]], v = nnum(s.value);
+    if (d.pfEst == null && d.pf != null) d.pfEst = d.pf; delete d.pf; if (v == null) delete d.pfDet; else d.pfDet = v; salvar(); desenhar(); }; });
   previaLanc(ys);
 }
 
