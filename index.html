@@ -141,55 +141,109 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   .print-only{display:block}
 }
 @media (max-width:640px){ main{padding:12px} header{padding:12px} .kpi .v{font-size:16px} }
+/* ===== v12: visual no estilo do sistema do Rodrigo ===== */
+:root{--bg:#f4f6fa;--card:#fff;--ink:#1b2430;--muted:#5c6b7a;--line:#e1e6ee;--soft:#f3f6fb;--navy:#0b2545;--navy2:#13315c;--badge:#eaf1fb;--accent:#0b2545;--accent-ink:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#11161d;--card:#1a212b;--ink:#e6ebf2;--muted:#9aa7b6;--line:#2b3542;--soft:#212a36;--navy:#0b2545;--navy2:#1d3f72;--badge:#22324a;--accent:#8fb0e8;--accent-ink:#0b1626}}
+:root[data-theme="dark"]{--bg:#11161d;--card:#1a212b;--ink:#e6ebf2;--muted:#9aa7b6;--line:#2b3542;--soft:#212a36;--navy:#0b2545;--navy2:#1d3f72;--badge:#22324a;--accent:#8fb0e8;--accent-ink:#0b1626}
+body{background:var(--bg);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+header.wrap{background:none;border:none;padding:24px 16px 0}
+.hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;border-radius:14px;padding:28px 36px;display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:flex-start}
+.hero h1{font-size:26px;font-weight:700;margin:4px 0 6px;color:#fff}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;font-weight:600}
+.hero-sub{font-size:13px;opacity:.85}
+.hero-r select{margin-top:6px;min-width:180px;background:#fff;color:#0b2545;border:none;font-weight:600;padding:8px 10px}
+.acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:16px 0 4px}
+.acoes button,.acoes .ms>button{font-size:13px;padding:9px 16px;border-radius:8px;background:var(--card);border:1px solid var(--line);color:var(--ink);font-weight:600}
+nav.tabs{border-bottom:1px solid var(--line);margin-top:10px;gap:0;flex-wrap:wrap}
+.tg{position:relative}
+.tgb{border:none!important;background:none!important;border-bottom:3px solid transparent!important;border-radius:0!important;padding:12px 20px!important;color:var(--muted)!important;font-weight:600;font-size:14px}
+.tg.on>.tgb,.tgb.on{color:var(--ink)!important;border-bottom-color:var(--navy)!important}
+.tgs{font-weight:400;color:var(--muted)}
+.tg-box{display:none;position:absolute;top:100%;left:0;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px;min-width:220px;box-shadow:0 8px 24px rgba(11,37,69,.14)}
+.tg.aberto .tg-box{display:block}
+.tg-box button{display:block;width:100%;text-align:left;border:none;background:none;padding:9px 12px;border-radius:6px;font-size:14px}
+.tg-box button:hover{background:var(--soft)} .tg-box button.on{background:var(--badge);font-weight:700}
+main{padding:18px 16px}
+.card{border-radius:12px;padding:20px;border:1px solid var(--line)}
+.kpi{border-radius:12px;padding:18px 20px;border:1px solid var(--line);background:var(--card)}
+.card .kpi{background:var(--soft);border:none;padding:12px 14px}
+.kpi .l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.kpi .v{font-size:24px}
+.drop{display:none}
+.drop.over{display:flex;position:fixed;inset:12px;z-index:60;background:rgba(11,37,69,.85);color:#fff;border-color:#fff;align-items:center;justify-content:center;font-size:20px}
+.avisos-box{border-radius:10px;margin-bottom:14px;padding:10px 14px}
+.avisos-box summary{cursor:pointer;font-weight:600;font-size:14px}
+.avisos-box .avisos{margin:10px 0 0}
+.badge{display:inline-block;background:var(--badge);color:var(--navy);font-weight:700;font-size:13px;border-radius:6px;padding:3px 9px}
+:root[data-theme="dark"] .badge{color:var(--ink)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .badge{color:var(--ink)}}
+.linha{display:grid;grid-template-columns:minmax(220px,2.2fr) repeat(4,minmax(110px,1fr)) 28px;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin-bottom:8px;cursor:pointer}
+.linha:hover{border-color:var(--navy2)}
+.linha .c{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.linha .n{font-weight:700;font-variant-numeric:tabular-nums}
+.linha .nome{font-size:14px;margin-top:4px}
+.det{background:var(--card);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;margin:-10px 0 10px;padding:14px 18px}
+.secao{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 10px}
+.secao h2{font-size:17px;margin:0;flex:1}
+.cnt{background:var(--badge);color:var(--navy);border-radius:999px;padding:1px 9px;font-size:12px;font-weight:700}
+@media (max-width:760px){.linha{grid-template-columns:1fr 1fr}.linha>div:first-child{grid-column:1/-1}.hero{padding:20px}}
+
 </style>
 </head>
 <body>
-<header>
- <div class="wrap">
-  <h1>Acompanhamento das PRs</h1>
-  <div class="sub">As PRs são lidas aqui no seu computador; nenhum número é enviado para fora. <span id="pastaInfo"></span></div>
-  <div class="bar">
-   <button class="primary" id="bAtualizar">Atualizar da pasta</button>
-   <button id="bArq">Carregar planilhas</button>
-   <div class="ms" id="mais"><button id="bMais">Mais ▾</button><div class="ms-box" id="maisBox">
-    <button class="item" id="bPasta">+ Ligar pasta</button>
-    <button class="item" id="bNovoProj">+ Novo projeto</button>
-    <button class="item" id="bExp">Salvar cópia dos dados</button>
-    <button class="item" id="bImp">Abrir cópia dos dados</button>
-    <button class="item" id="bCfg">Ajustes e senha</button>
-   </div></div>
-   <button id="bTrancar" style="display:none" title="Fecha a página; para abrir de novo pede a senha">🔒 Bloquear</button>
-   <input type="file" id="fArq" accept=".xlsb,.xlsx,.xlsm" multiple hidden>
-   <input type="file" id="fPasta" webkitdirectory multiple hidden>
-   <input type="file" id="fImp" accept=".json" hidden>
+<header class="wrap">
+ <div class="hero">
+  <div class="hero-l">
+   <div class="eyebrow">Acompanhamento das PRs · AAPP</div>
+   <h1 id="titulo">Comparativo PR x PréCierre</h1>
+   <div class="hero-sub" id="heroSub"></div>
   </div>
-  <div class="prog" id="prog"><i></i></div>
-  <div class="small muted" id="status"></div>
-  <div class="bar" style="margin-top:10px"><label class="small"><b>Mês de referência</b> <select id="mesRef"></select></label><span class="small muted">vale para Comparativo, Faturamento e Cobro, Rateios e Transferências</span></div>
-  <nav class="tabs" id="tabs">
-   <button data-t="comp" class="on">Comparativo</button>
-   <button data-t="res">Prometido x realizado</button>
-   <button data-t="fc">Faturamento e Cobro</button>
-   <button data-t="dpf">Controle de DPF</button>
-   <button data-t="ing">Ingresso e demandas</button>
-   <button data-t="r26">Rateio 26AP00</button>
-   <button data-t="rat">Rateio de pessoas</button>
-   <button data-t="tr">Transferências</button>
-   <button data-t="cal">Calendário</button>
-   <button data-t="prev">Detalhes por projeto</button>
-   <button data-t="cart">Projetos</button>
-   <button data-t="arq">Arquivos lidos</button>
-  </nav>
+  <div class="hero-r">
+   <div class="eyebrow">Mês de referência</div>
+   <select id="mesRef"></select>
+  </div>
  </div>
+ <div class="acoes">
+  <button id="bAtualizar">Atualizar da pasta</button>
+  <button id="bArq">Subir planilhas</button>
+  <div class="ms" id="mais"><button id="bMais" title="Ajustes">⚙</button><div class="ms-box" id="maisBox">
+   <button class="item" id="bPasta">Ligar pasta</button>
+   <button class="item" id="bNovoProj">Novo projeto</button>
+   <button class="item" id="bExp">Salvar cópia dos dados</button>
+   <button class="item" id="bImp">Abrir cópia dos dados</button>
+   <button class="item" id="bCfg">Ajustes e senha</button>
+  </div></div>
+  <button id="bTrancar" style="display:none" title="Fecha a página; para abrir de novo pede a senha">🔒</button>
+  <span class="small muted" id="pastaInfo"></span>
+  <input type="file" id="fArq" accept=".xlsb,.xlsx,.xlsm" multiple hidden>
+  <input type="file" id="fPasta" webkitdirectory multiple hidden>
+  <input type="file" id="fImp" accept=".json" hidden>
+ </div>
+ <div class="prog" id="prog"><i></i></div>
+ <div class="small muted" id="status"></div>
+ <nav class="tabs" id="tabs">
+  <div class="tg" data-g="rev"><button class="tgb">Revisão<span class="tgs"></span> ▾</button><div class="tg-box">
+   <button data-t="comp">Comparativo</button><button data-t="res">Prometido x realizado</button><button data-t="dpf">Controle de DPF</button><button data-t="ing">Ingresso e demandas</button><button data-t="prev">Detalhes por projeto</button>
+  </div></div>
+  <div class="tg" data-g="fech"><button class="tgb">Fechamento<span class="tgs"></span> ▾</button><div class="tg-box">
+   <button data-t="r26">Rateio 26AP00</button><button data-t="rat">Rateio de pessoas</button><button data-t="tr">Transferências</button><button data-t="cal">Calendário</button>
+  </div></div>
+  <div class="tg"><button class="tgb" data-t="fat">Faturamento</button></div>
+  <div class="tg"><button class="tgb" data-t="cob">Cobro</button></div>
+  <div class="tg" data-g="mais"><button class="tgb">Mais<span class="tgs"></span> ▾</button><div class="tg-box">
+   <button data-t="cart">Projetos</button><button data-t="arq">Arquivos lidos</button>
+  </div></div>
+ </nav>
 </header>
 <main class="wrap">
- <div class="avisos" id="avisos"></div>
- <div class="drop" id="drop">Arraste para cá as PRs (.xlsb), as consolidadas (PréCierre, Cierre e prévias) ou o calendário de fechamento (PDF).</div>
+ <details class="avisos-box" id="avisosBox"><summary id="avisosRes"></summary><div class="avisos" id="avisos"></div></details>
+ <div class="drop" id="drop">Solte aqui as PRs, as consolidadas ou o calendário (PDF)</div>
  <div class="tools" id="filtros"></div>
 
  <section class="panel on" id="p-comp"><div id="compOut"></div></section>
  <section class="panel" id="p-res"><div id="resOut"></div></section>
- <section class="panel" id="p-fc"><div id="fcOut"></div></section>
+ <section class="panel" id="p-fat"><div id="fatOut"></div></section>
+ <section class="panel" id="p-cob"><div id="cobOut"></div></section>
  <section class="panel" id="p-r26"><div id="r26Out"></div></section>
  <section class="panel" id="p-rat"><div id="ratOut"></div></section>
  <section class="panel" id="p-tr"><div id="trOut"></div></section>
@@ -651,9 +705,6 @@ function analisar(){
 // ================= filtros (seleção múltipla) =================
 var DIM = [
   { id: 'proj', rot: 'Projeto', val: function(x){ return x.c; }, txt: function(v, xs){ var x = xs.find(function(y){ return y.c === v; }); return v + ' · ' + (x ? x.nome : ''); } },
-  { id: 'reg', rot: 'Região', val: function(x){ return x.regiao; } },
-  { id: 'ger', rot: 'Gerente OP', val: function(x){ return x.gerente; } },
-  { id: 'sit', rot: 'Situação', val: function(x){ return SIT[x.k]; } }
 ];
 function filtrar(xs){ return xs.filter(function(x){ return DIM.every(function(d){ var s = E.f[d.id]; return !s || !s.length || s.indexOf(d.val(x)) >= 0; }); }); }
 function montarFiltros(xs){
@@ -662,11 +713,11 @@ function montarFiltros(xs){
     var vals = Array.from(new Set(xs.map(d.val))).sort(function(a,b){ return d.id === 'sit' ? 0 : String(a).localeCompare(String(b)); });
     if (d.id === 'sit') vals = ['Vermelho', 'Amarelo', 'Verde', 'Sem referência'].filter(function(v){ return vals.indexOf(v) >= 0; });
     var sel = E.f[d.id] || [];
-    var rot = !sel.length ? d.rot + ': todos' : d.rot + ': ' + (sel.length === 1 ? sel[0] : sel.length + ' escolhidos');
+    var rot = !sel.length ? 'Filtrar ou selecionar projetos' : (sel.length === 1 ? sel[0] : sel.length + ' projetos escolhidos');
     return '<div class="ms" data-d="' + d.id + '"><button type="button" class="' + (sel.length ? 'ativo' : '') + '">' + esc(rot) + ' ▾</button><div class="ms-box' + (aberto === d.id ? ' on' : '') + '">' +
       '<label><input type="checkbox" data-all ' + (!sel.length ? 'checked' : '') + '> <b>Todos</b></label>' +
       vals.map(function(v){ return '<label><input type="checkbox" value="' + esc(v) + '" ' + (sel.indexOf(v) >= 0 ? 'checked' : '') + '> ' + esc(d.txt ? d.txt(v, xs) : v) + '</label>'; }).join('') + '</div></div>';
-  }).join('') + (DIM.some(function(d){ return (E.f[d.id] || []).length; }) ? '<button class="link small" id="limpaF">limpar filtros</button>' : '');
+  }).join('') + (DIM.some(function(d){ return (E.f[d.id] || []).length; }) ? '<button class="small" id="limpaF">Limpar</button>' : '');
   el.querySelectorAll('.ms').forEach(function(ms){
     var box = ms.querySelector('.ms-box'), id = ms.dataset.d;
     ms.querySelector('button').onclick = function(ev){ ev.stopPropagation(); var on = box.classList.contains('on'); fecharMs(); if (!on) box.classList.add('on'); };
@@ -700,6 +751,9 @@ function desenharAvisos(xs){
   if (sj) av.push(['warn', sj + ' mês(es) com resultado abaixo do previsto ainda sem justificativa', 'prev']);
   var semPR = (E.cfg.carteira || []).filter(function(c){ return !xs.some(function(x){ return x.c === c; }); });
   if (E.cfg.soCarteira && semPR.length && E.retratos.length) av.push(['wait', semPR.length + ' projeto' + (semPR.length > 1 ? 's' : '') + ' da carteira sem nenhuma PR lida: ' + semPR.slice(0, 10).join(', ') + (semPR.length > 10 ? '…' : ''), 'arq']);
+  var nb = av.filter(function(a){ return a[0] === 'bad'; }).length, bx = document.getElementById('avisosBox');
+  bx.style.display = av.length ? '' : 'none'; bx.className = 'avisos-box ' + (nb ? 'p-bad' : 'p-warn');
+  document.getElementById('avisosRes').textContent = '⚠ ' + av.length + ' ponto' + (av.length > 1 ? 's' : '') + ' de atenção' + (nb ? ' (' + nb + ' crítico' + (nb > 1 ? 's' : '') + ')' : '') + ' · clique para ver';
   document.getElementById('avisos').innerHTML = av.map(function(a){ return '<div class="aviso p-' + a[0] + '"><span style="flex:1">' + esc(a[1]) + '</span><button data-ir="' + a[2] + '">ver</button></div>'; }).join('');
   document.querySelectorAll('#avisos [data-ir]').forEach(function(b){ b.onclick = function(){ irAba(b.dataset.ir); }; });
 }
@@ -1739,7 +1793,7 @@ function tendDPF(x, M){
 }
 
 // ---------- aba Comparativo ----------
-var soDiv = false, compAbertos = {};
+var soDiv = null, compAbertos = {};
 function dadosComp(x, M){
   var pr = snapPR(x, M), pc = snapPC(x, M);
   var lin = function(k){ return { pr: vL(pr, k, M), pc: vL(pc, k, M) }; };
@@ -1752,10 +1806,15 @@ function dadosComp(x, M){
   if (o.k === 'ok' && o.mp.pr != null && o.mp.pc != null && Math.abs(o.mp.pr - o.mp.pc) > 0.02) o.k = 'warn';
   return o;
 }
+function linhaProj(x, cols, aberto, attr){
+  return '<div class="linha" ' + attr + '><div><span class="badge">' + x.c + '</span><div class="nome">' + esc(x.nome) + '</div></div>' +
+    cols.map(function(c){ return '<div><div class="c">' + c[0] + '</div><div class="n ' + (c[2] || '') + '">' + c[1] + '</div>' + (c[3] ? '<div class="small muted">' + c[3] + '</div>' : '') + '</div>'; }).join('') +
+    '<div class="muted">' + (aberto ? '▲' : '▼') + '</div></div>';
+}
 function desenharComp(xs){
   var el = document.getElementById('compOut'); if (!el) return;
   var M = mesRef(), a = anoRef(), mr = rotMes(M, a);
-  if (!xs.length) { el.innerHTML = '<div class="empty">Nenhum projeto carregado ou dentro dos filtros.</div>'; return; }
+  if (!xs.length) { el.innerHTML = '<div class="empty">Nenhum projeto carregado. Use "Subir planilhas" ou "Atualizar da pasta".</div>'; return; }
   var D = xs.map(function(x){ return dadosComp(x, M); });
   var ambos = D.filter(function(o){ return o.ing.pr != null && o.ing.pc != null; });
   var s = function(lst, f){ return lst.reduce(function(t, o){ var v = f(o); return t + (v || 0); }, 0); };
@@ -1763,64 +1822,53 @@ function desenharComp(xs){
   var aPR = s(ambos, function(o){ return o.anoI.pr; }), aPC = s(ambos, function(o){ return o.anoI.pc; });
   var sub = D.filter(function(o){ return o.tend.t.indexOf('Subindo') >= 0; }), cai = D.filter(function(o){ return o.tend.t.indexOf('Caindo') >= 0; }), est = D.filter(function(o){ return o.tend.t.indexOf('Estável') >= 0; });
   var saldo = s(D, function(o){ return o.tend.d; });
-  var semPR = D.filter(function(o){ return !o.pr; }).length, semPC = D.filter(function(o){ return !o.pc; }).length;
-  var h = '<div class="tools no-print" style="margin-bottom:10px"><b style="flex:1">PR x PréCierre de ' + mr + '</b>' +
-    '<label class="small"><input type="checkbox" id="cSoDiv"' + (soDiv ? ' checked' : '') + '> Só divergentes</label>' +
-    '<button id="bCopRes">Copiar resumo para e-mail</button><button id="bMail">Abrir e-mail</button><button onclick="window.print()">Imprimir ou PDF</button><button id="bXComp">Baixar em Excel</button></div>';
-  h += '<div class="kpis">' +
-    '<div class="kpi"><div class="l">Ingresos de ' + mr + ' (PR)</div><div class="v">' + brl(iPR) + '</div><div class="d">' + pctTxt(iPR, iPC) + ' x PréCierre (' + sinal(iPR - iPC) + ')</div></div>' +
-    '<div class="kpi"><div class="l">Margen (%) de ' + mr + ' (PR)</div><div class="v">' + mpct(mPR, iPR) + '</div><div class="d">PréCierre ' + mpct(mPC, iPC) + '</div></div>' +
-    '<div class="kpi"><div class="l">Ingresos do ano (PR)</div><div class="v">' + brl(aPR) + '</div><div class="d">' + pctTxt(aPR, aPC) + ' x PréCierre</div></div>' +
-    '<div class="kpi"><div class="l">DPF &gt; Corrente</div><div class="v">' + sub.length + ' subindo</div><div class="d">' + cai.length + ' caindo · ' + est.length + ' estáveis · saldo ' + sinal(saldo) + '</div></div></div>';
-  if (semPR || semPC) h += '<div class="prom no-print" style="margin-bottom:12px">⚠ ' + (semPR ? semPR + ' projeto(s) sem a PR de ' + mr + ' lida' : '') + (semPR && semPC ? '; ' : '') + (semPC ? semPC + ' sem o PréCierre de ' + mr : '') + '. Eles aparecem na lista, mas sem comparação. Os totais acima somam só os ' + ambos.length + ' com os dois.</div>';
-  // top 5
   var top = ambos.slice().sort(function(p, q){ return Math.abs(q.ing.pr - q.ing.pc) - Math.abs(p.ing.pr - p.ing.pc); }).filter(function(o){ return Math.abs(o.ing.pr - o.ing.pc) >= 1; }).slice(0, 5);
-  if (top.length) h += '<div class="card"><h2>Maiores diferenças de Ingresos (PR x PréCierre)</h2><div class="kpis" style="margin-bottom:0">' + top.map(function(o){ var d = o.ing.pr - o.ing.pc;
-    return '<div class="kpi"><div class="l"><b>' + o.x.c + '</b> ' + esc(o.x.nome) + '</div><div class="small">PR ' + brl(o.ing.pr) + ' · PréCierre ' + brl(o.ing.pc) + '</div><div class="d ' + (d < 0 ? 'bad' : 'ok') + '"><b>' + brl(Math.abs(d)) + (d < 0 ? ' abaixo' : ' acima') + ' do previsto</b></div></div>'; }).join('') + '</div></div>';
-  // lista por projeto
+  var h = '<div class="tools no-print" style="justify-content:flex-end"><button id="bPdf">Baixar PDF</button><button id="bMail">Enviar por e-mail</button></div>';
+  h += '<div class="kpis">' +
+    '<div class="kpi"><div class="l">Ingresos do mês (PR)</div><div class="v">' + brl(iPR) + '</div><div class="d ' + (iPR < iPC ? 'bad' : 'ok') + '">' + pctTxt(iPR, iPC) + ' x PréCierre (' + sinal(iPR - iPC) + ')</div></div>' +
+    '<div class="kpi"><div class="l">Margen % do mês (PR)</div><div class="v">' + mpct(mPR, iPR) + '</div><div class="d muted">' + mpct(mPC, iPC) + ' previsto no PréCierre</div></div>' +
+    '<div class="kpi"><div class="l">Ingresos acumulado do ano (PR)</div><div class="v">' + brl(aPR) + '</div><div class="d muted">' + pctTxt(aPR, aPC) + ' x PréCierre</div></div>' +
+    '<div class="kpi"><div class="l">DPF acima do corrente</div><div class="v ' + (sub.length ? 'bad' : '') + '">' + sub.length + ' subindo</div><div class="d muted">' + cai.length + ' caindo · ' + est.length + ' estáveis · saldo ' + sinal(saldo) + '</div></div></div>';
+  if (top.length) h += '<div class="card"><div class="secao" style="margin-top:0"><h2>Maiores divergências (Ingresos do mês, PR x PréCierre)</h2><span class="cnt">Top ' + top.length + '</span></div>' +
+    top.map(function(o){ var d = o.ing.pr - o.ing.pc; return '<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)"><span class="badge">' + o.x.c + '</span><span style="flex:1;min-width:160px">' + esc(o.x.nome) + '</span><span class="small muted">PR ' + brl(o.ing.pr) + ' · PréCierre ' + brl(o.ing.pc) + '</span><b class="' + (d < 0 ? 'bad' : 'ok') + '">' + brl(Math.abs(d)) + (d < 0 ? ' abaixo' : ' acima') + ' do previsto</b></div>'; }).join('') + '</div>';
   var lst = D.slice().sort(function(p, q){ return ORD[p.k] - ORD[q.k] || Math.abs((q.ing.pr || 0) - (q.ing.pc || 0)) - Math.abs((p.ing.pr || 0) - (p.ing.pc || 0)); });
-  if (soDiv) lst = lst.filter(function(o){ return o.k === 'bad' || o.k === 'warn'; });
-  h += '<div class="legenda small"><span><span class="pill p-ok">Divergência pequena</span></span><span><span class="pill p-warn">Atenção</span></span><span><span class="pill p-bad">Divergência relevante</span></span><span class="muted">pela tolerância dos Ajustes (' + E.cfg.tol + '% e ' + brl(E.cfg.min) + ')</span></div>';
+  if (soDiv) lst = lst.filter(function(o){ return o.k === soDiv; });
+  h += '<div class="secao"><h2>Projetos <span class="cnt">' + lst.length + '</span></h2>' + ['ok', 'warn', 'bad'].map(function(k){ return '<button class="pill ' + NIV[k][0] + '" data-niv="' + k + '" style="border:' + (soDiv === k ? '2px solid currentColor' : '1px solid transparent') + '">' + NIV[k][1] + '</button>'; }).join('') + (soDiv ? '<button class="small" data-niv="">Limpar</button>' : '') + '</div>';
+  var semPar = D.filter(function(o){ return o.k === 'wait'; }).length;
+  if (semPar) h += '<div class="small muted" style="margin:-4px 0 10px">' + semPar + ' projeto(s) sem a PR ou o PréCierre de ' + mr + ' lidos: aparecem sem comparação.</div>';
   lst.forEach(function(o){
     var x = o.x, ab = compAbertos[x.c], ok = x.c + '|' + M, obs = (E.obs || {})[ok] || '';
-    h += '<div class="card proj st-' + ({ bad: 'crit', warn: 'aten', ok: 'bom' }[o.k] || '') + ' rel-card"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill ' + NIV[o.k][0] + '">' + NIV[o.k][1] + '</span></h2>' +
-      '<div class="kpis" style="margin:10px 0 4px">' +
-      '<div class="kpi"><div class="l">Ingresos ' + mr + ' (PR)</div><div class="v">' + brl(o.ing.pr) + '</div><div class="d">' + pctTxt(o.ing.pr, o.ing.pc) + ' x PréCierre</div></div>' +
-      '<div class="kpi"><div class="l">Margen (%) ' + mr + '</div><div class="v">' + (o.mp.pr != null ? pct(o.mp.pr) : '—') + '</div><div class="d">PréCierre ' + (o.mp.pc != null ? pct(o.mp.pc) : '—') + '</div></div>' +
-      '<div class="kpi"><div class="l">DPF &gt; Corrente</div><div class="v ' + (o.tend.k === 'bad' ? 'bad' : '') + '">' + o.tend.t + '</div><div class="d">' + (o.tend.d != null ? sinal(o.tend.d) + ' no mês' : '') + '</div></div></div>' +
-      (obs && !ab ? '<div class="prom small"><b>Observação:</b> ' + esc(obs) + '</div>' : '') +
-      '<button class="link no-print" data-cab="' + x.c + '">' + (ab ? 'Esconder detalhe ▴' : 'Ver detalhe (PR x PréCierre x POA, ano, observação) ▾') + '</button>';
+    var dv = o.ing.pr != null && o.ing.pc != null ? pctTxt(o.ing.pr, o.ing.pc) : '—';
+    h += linhaProj(x, [
+      ['Ingresos do mês (PR)', brl(o.ing.pr)],
+      ['vs PréCierre', dv, o.k === 'bad' ? 'bad' : o.k === 'warn' ? 'warn' : '', o.k !== 'wait' ? NIV[o.k][1] : ''],
+      ['Margen % do mês', o.mp.pr != null ? pct(o.mp.pr) : '—', o.mp.pr != null && o.mp.pr < 0 ? 'bad' : ''],
+      ['DPF acima do corrente', o.tend.t, o.tend.k === 'bad' ? 'bad' : '', o.tend.d != null ? sinal(o.tend.d) : '']
+    ], ab, 'data-cab="' + x.c + '"');
     if (ab) {
       var row = function(rot, p, c, poa, ruimSubir, ehPct){ var f = function(v){ return v == null ? '—' : ehPct ? pct(v) : brl(v); }, d1 = corDif(c, p, ruimSubir, ehPct), d2 = poa == null ? { c: '', t: '—' } : corDif(poa, p, ruimSubir, ehPct);
         return '<tr><td class="l">' + rot + '</td><td><b>' + f(p) + '</b></td><td>' + f(c) + '</td><td class="' + d1.c + '">' + d1.t + '</td><td>' + (poa === undefined ? '' : f(poa)) + '</td><td class="' + (poa === undefined ? '' : d2.c) + '">' + (poa === undefined ? '' : d2.t) + '</td></tr>'; };
-      var poaMp = o.poaI ? o.poaM / o.poaI : null;
-      h += '<div class="scroll" style="margin-top:8px"><table class="cmp3"><thead><tr><th>' + mr + '</th><th>PR<div class="fx">' + esc(o.pr ? o.pr.arquivo : 'não carregada') + '</div></th><th>PréCierre<div class="fx">' + esc(o.pc ? rotFonte(o.pc) : 'não carregado') + '</div></th><th>PR x PréCierre</th><th>POA</th><th>PR x POA</th></tr></thead><tbody>' +
-        row('Ingresos', o.ing.pr, o.ing.pc, o.poaI, false) + row('Facturación', o.fat.pr, o.fat.pc, undefined, false) + row('Cobros', o.cob.pr, o.cob.pc, undefined, false) +
-        row('Margen', o.mar.pr, o.mar.pc, o.poaM, false) + row('Margen (%)', o.mp.pr, o.mp.pc, poaMp, false, true) +
-        row('DPF', o.dpf.pr, o.dpf.pc, undefined, true) + row('DPF &gt; Corrente', o.dpfA.pr, o.dpfA.pc, undefined, true) + row('ALO', o.alo.pr, o.alo.pc, undefined, true) +
-        '</tbody></table></div>';
       var amp = function(I, G){ return I ? G / I : null; };
-      h += '<div class="scroll" style="margin-top:8px"><table class="cmp3"><thead><tr><th>Ano ' + a + '</th><th>PR</th><th>PréCierre</th><th>PR x PréCierre</th><th>POA</th><th>PR x POA</th></tr></thead><tbody>' +
-        row('Ingresos do ano', o.anoI.pr, o.anoI.pc, o.anoI.poa, false) + row('Margen (%) do ano', amp(o.anoI.pr, o.anoM.pr), amp(o.anoI.pc, o.anoM.pc), amp(o.anoI.poa, o.anoM.poa), false, true) + '</tbody></table></div>';
-      h += '<label class="small" style="display:block;margin-top:8px">Observação de ' + mr + ' (sai no resumo e no PDF)<textarea data-obs="' + ok + '" placeholder="Por que a PR ficou diferente do PréCierre?">' + esc(obs) + '</textarea></label>';
-      h += '<div class="orig">De onde vem: PR do projeto (aba RESUMO, mês ' + MES[M] + ') e PréCierre consolidado (aba FC, mesmo mês). POA: aba POA da PR ou colunas POA da aba FC. DPF &gt; Corrente: linha "DPF > CORRENTE" da PR.</div>';
+      h += '<div class="det"><div class="scroll"><table class="cmp3"><thead><tr><th>' + mr + '</th><th>PR</th><th>PréCierre</th><th>Diferença</th><th>POA</th><th>Diferença x POA</th></tr></thead><tbody>' +
+        row('Ingresos', o.ing.pr, o.ing.pc, o.poaI, false) + row('Facturación', o.fat.pr, o.fat.pc, undefined, false) + row('Cobros', o.cob.pr, o.cob.pc, undefined, false) +
+        row('Margen', o.mar.pr, o.mar.pc, o.poaM, false) + row('Margen (%)', o.mp.pr, o.mp.pc, amp(o.poaI, o.poaM), false, true) +
+        row('DPF', o.dpf.pr, o.dpf.pc, undefined, true) + row('DPF &gt; Corrente', o.dpfA.pr, o.dpfA.pc, undefined, true) + row('ALO', o.alo.pr, o.alo.pc, undefined, true) +
+        '<tr><th class="l" colspan="6">Acumulado do ano ' + a + '</th></tr>' + row('Ingresos (ano)', o.anoI.pr, o.anoI.pc, o.anoI.poa, false) + row('Margen % (ano)', amp(o.anoI.pr, o.anoM.pr), amp(o.anoI.pc, o.anoM.pc), amp(o.anoI.poa, o.anoM.poa), false, true) +
+        '</tbody></table></div>' +
+        '<label class="small" style="display:block;margin-top:10px"><b>Observações</b><textarea data-obs="' + ok + '" placeholder="Por que a PR ficou diferente do PréCierre?">' + esc(obs) + '</textarea></label>' +
+        '<div class="orig">PR: ' + esc(o.pr ? o.pr.arquivo : 'não lida') + ' (aba RESUMO). PréCierre: ' + esc(o.pc ? o.pc.arquivo : 'não lido') + ' (aba FC). POA: aba POA da PR ou colunas POA da FC.</div></div>';
     }
-    h += '</div>';
   });
+  h += '<div class="orig">Gerado a partir das PRs (aba RESUMO) e do PréCierre (aba FC). Divergência pela tolerância dos Ajustes (' + E.cfg.tol + '% e ' + brl(E.cfg.min) + ').</div>';
   el.innerHTML = h;
-  document.getElementById('cSoDiv').onchange = function(e){ soDiv = e.target.checked; desenharComp(xs); };
+  el.querySelectorAll('[data-niv]').forEach(function(b){ b.onclick = function(){ soDiv = b.dataset.niv && soDiv !== b.dataset.niv ? b.dataset.niv : null; desenharComp(xs); }; });
   el.querySelectorAll('[data-cab]').forEach(function(b){ b.onclick = function(){ compAbertos[b.dataset.cab] = !compAbertos[b.dataset.cab]; desenharComp(xs); }; });
   el.querySelectorAll('textarea[data-obs]').forEach(function(t){ t.onchange = function(){ E.obs = E.obs || {}; E.obs[t.dataset.obs] = t.value.trim(); salvar(); }; });
-  var texto = function(){ return resumoTexto(D, M, a, { iPR: iPR, iPC: iPC, mPR: mPR, mPC: mPC, aPR: aPR, aPC: aPC, sub: sub.length, cai: cai.length, top: top }); };
-  document.getElementById('bCopRes').onclick = function(){ var t = texto(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ status('Resumo copiado. Cole no e-mail (Ctrl+V).'); }).catch(function(){ prompt('Copie o resumo:', t); }); };
-  document.getElementById('bMail').onclick = function(){ var t = texto(); location.href = 'mailto:?subject=' + encodeURIComponent('PR x PréCierre ' + mr) + '&body=' + encodeURIComponent(t.slice(0, 1800)); };
-  document.getElementById('bXComp').onclick = function(){
-    var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(D.map(function(o){ return { 'Código': o.x.c, 'Projeto': o.x.nome, 'Situação': NIV[o.k][1],
-      'Ingresos PR': o.ing.pr, 'Ingresos PréCierre': o.ing.pc, 'Ingresos POA': o.poaI, 'Facturación PR': o.fat.pr, 'Facturación PréCierre': o.fat.pc, 'Cobros PR': o.cob.pr, 'Cobros PréCierre': o.cob.pc,
-      'Margen PR': o.mar.pr, 'Margen PréCierre': o.mar.pc, 'Margen (%) PR': o.mp.pr, 'Margen (%) PréCierre': o.mp.pc, 'DPF > Corrente PR': o.dpfA.pr, 'Tendência DPF > Corrente': o.tend.t,
-      'Ingresos ano PR': o.anoI.pr, 'Ingresos ano PréCierre': o.anoI.pc, 'Ingresos ano POA': o.anoI.poa, 'Observação': (E.obs || {})[o.x.c + '|' + M] || '' }; })), 'Comparativo ' + MES[M]);
-    XLSX.writeFile(wb, 'Comparativo PR x PreCierre ' + MES[M] + '-' + a + '.xlsx');
+  document.getElementById('bPdf').onclick = function(){ window.print(); };
+  document.getElementById('bMail').onclick = function(){
+    var t = resumoTexto(D, M, a, { iPR: iPR, iPC: iPC, mPR: mPR, mPC: mPC, aPR: aPR, aPC: aPC, sub: sub.length, cai: cai.length, top: top });
+    var abre = function(){ location.href = 'mailto:?subject=' + encodeURIComponent('PR x PréCierre ' + mr) + '&body=' + encodeURIComponent(t.slice(0, 1800)); };
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ status('Resumo copiado e e-mail aberto. Se o texto não aparecer no e-mail, cole com Ctrl+V.'); abre(); }).catch(abre);
   };
 }
 function resumoTexto(D, M, a, t){
@@ -1837,51 +1885,45 @@ function resumoTexto(D, M, a, t){
   return L.join('\n');
 }
 
-// ---------- aba Faturamento e Cobro ----------
+// ---------- abas Faturamento e Cobro ----------
 var ST_FAT = ['', 'Medição enviada ao cliente', 'Aguardando aceite', 'Nota solicitada', 'Nota emitida', 'Sem faturamento no mês'];
 var ST_COB = ['', 'Aguardando vencimento', 'Vencida, cobrando', 'Recebido em parte', 'Recebido'];
-function desenharFC(xs){
-  var el = document.getElementById('fcOut'); if (!el) return;
+var fcAbertos = {};
+function desenharFC(xs){ desenharFC1(xs, 'fat'); desenharFC1(xs, 'cob'); }
+function desenharFC1(xs, tipoB){
+  var el = document.getElementById(tipoB + 'Out'); if (!el) return;
   var M = mesRef(), a = anoRef(), mr = rotMes(M, a), ym = a + '-' + String(M + 1).padStart(2, '0');
-  if (!xs.length) { el.innerHTML = '<div class="empty">Nenhum projeto carregado ou dentro dos filtros.</div>'; return; }
+  if (!xs.length) { el.innerHTML = '<div class="empty">Nenhum projeto carregado.</div>'; return; }
   E.fc = E.fc || {};
-  var bloco = function(tipoB){
-    var kL = tipoB === 'fat' ? 'faturamento' : 'cobros', ST = tipoB === 'fat' ? ST_FAT : ST_COB, nome = tipoB === 'fat' ? 'Faturamento' : 'Cobro';
-    var rows = xs.map(function(x){
-      var pr = snapPR(x, M) || snapPC(x, M), meta = vL(pr, kL, M), re = snapReal(x, M), real = vL(re, kL, M), k = x.c + '|' + ym + '|' + tipoB, d = E.fc[k] || {};
-      var feito = real != null ? real : (d.v || 0);
-      return { x: x, meta: meta, metaF: pr ? rotFonte(pr) : '', real: real, realF: re ? rotFonte(re) : '', d: d, k: k, feito: feito, av: meta ? feito / meta : null };
-    });
-    var tm = rows.reduce(function(s, r){ return s + (r.meta || 0); }, 0), tf = rows.reduce(function(s, r){ return s + (r.feito || 0); }, 0);
-    var h = '<div class="card"><h2>' + nome + ' de ' + mr + '</h2><div class="kpis">' +
-      '<div class="kpi"><div class="l">Meta do mês (PR)</div><div class="v">' + brl(tm) + '</div></div>' +
-      '<div class="kpi"><div class="l">' + (tipoB === 'fat' ? 'Faturado' : 'Recebido') + ' (Cierre ou lançado aqui)</div><div class="v">' + brl(tf) + '</div></div>' +
-      '<div class="kpi"><div class="l">Avanço</div><div class="v ' + (tm && tf / tm < 1 ? 'warn' : 'ok') + '">' + (tm ? pct(tf / tm) : '—') + '</div><div class="d">falta ' + brl(Math.max(0, tm - tf)) + '</div></div></div>';
-    h += '<div class="scroll"><table><thead><tr><th>Projeto</th><th>Meta (PR)</th><th>' + (tipoB === 'fat' ? 'Faturado' : 'Recebido') + '</th><th>Avanço</th><th class="l">' + (tipoB === 'fat' ? 'Solicitado (R$)' : 'Confirmado (R$)') + '</th><th class="l">Previsão</th><th class="l">Status</th><th class="l">Comentário</th></tr></thead><tbody>';
-    rows.sort(function(p, q){ return (q.meta || 0) - (p.meta || 0); }).forEach(function(r){
-      var cls = r.av == null ? '' : r.av >= 0.999 ? 'c-bom' : r.av >= 0.5 ? 'c-aten' : 'c-crit';
-      h += '<tr><td class="l"><b>' + esc(r.x.nome) + '</b> <span class="muted small">' + r.x.c + '</span>' + (r.metaF ? '<div class="fx muted small">' + esc(r.metaF) + '</div>' : '') + '</td><td>' + brl(r.meta) + '</td>' +
-        '<td>' + (r.real != null ? brl(r.real) + '<div class="muted small">' + esc(r.realF) + '</div>' : brl(r.d.v || 0)) + '</td><td class="' + cls + '">' + (r.av == null ? '—' : pct(r.av)) + '</td>' +
-        '<td class="l">' + (r.real != null ? '<span class="muted small">já no Cierre</span>' : '<input type="text" style="width:120px" data-fc="' + r.k + '" data-c="v" value="' + esc(r.d.v != null ? fmtN(r.d.v) : '') + '" placeholder="0,00">') + '</td>' +
-        '<td class="l"><input type="date" data-fc="' + r.k + '" data-c="p" value="' + esc(r.d.p || '') + '"></td>' +
-        '<td class="l"><select data-fc="' + r.k + '" data-c="s">' + ST.map(function(s){ return '<option' + (r.d.s === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></td>' +
-        '<td class="l"><input type="text" style="min-width:160px" data-fc="' + r.k + '" data-c="o" value="' + esc(r.d.o || '') + '"></td></tr>';
-    });
-    h += '</tbody></table></div><div class="orig">Meta = linha ' + (tipoB === 'fat' ? '"FACTURACIÓN"' : '"COBROS"') + ' de ' + mr + ' na PR do mês (ou no PréCierre, se a PR não estiver lida). ' + (tipoB === 'fat' ? 'Faturado' : 'Recebido') + ' = a mesma linha no Cierre ou Prévia do Cierre, quando carregados; antes disso vale o valor que você lançar aqui. Quando o Cierre chegar, ele substitui o lançado.</div></div>';
-    return h;
-  };
-  el.innerHTML = '<div class="tools no-print"><button id="bXFC">Baixar em Excel</button></div>' + bloco('fat') + bloco('cob');
-  el.querySelectorAll('[data-fc]').forEach(function(i){ i.onchange = function(){
-    var d = E.fc[i.dataset.fc] = E.fc[i.dataset.fc] || {};
-    d[i.dataset.c] = i.dataset.c === 'v' ? nnum(i.value) : i.value; salvar(); desenharFC(xs);
-  }; });
-  document.getElementById('bXFC').onclick = function(){
+  var kL = tipoB === 'fat' ? 'faturamento' : 'cobros', ST = tipoB === 'fat' ? ST_FAT : ST_COB, nome = tipoB === 'fat' ? 'Faturamento' : 'Cobro', feitoR = tipoB === 'fat' ? 'Faturado' : 'Recebido';
+  var rows = xs.map(function(x){
+    var pr = snapPR(x, M) || snapPC(x, M), meta = vL(pr, kL, M), re = snapReal(x, M), real = vL(re, kL, M), k = x.c + '|' + ym + '|' + tipoB, d = E.fc[k] || {};
+    var feito = real != null ? real : (d.v || 0);
+    return { x: x, meta: meta, real: real, realF: re ? rotFonte(re) : '', d: d, k: k, feito: feito, av: meta ? feito / meta : null };
+  }).sort(function(p, q){ return (q.meta || 0) - (p.meta || 0); });
+  var tm = rows.reduce(function(s, r){ return s + (r.meta || 0); }, 0), tf = rows.reduce(function(s, r){ return s + (r.feito || 0); }, 0);
+  var h = '<div class="tools no-print" style="justify-content:flex-end"><button data-xfc>Exportar Excel</button></div>' +
+    '<div class="kpis"><div class="kpi"><div class="l">Meta do mês (PR)</div><div class="v">' + brl(tm) + '</div></div>' +
+    '<div class="kpi"><div class="l">' + feitoR + ' no mês</div><div class="v">' + brl(tf) + '</div></div>' +
+    '<div class="kpi"><div class="l">% Avanço geral</div><div class="v ' + (tm && tf / tm < 1 ? 'warn' : 'ok') + '">' + (tm ? pct(tf / tm) : '—') + '</div><div class="d muted">' + (tm > tf ? 'faltam ' + brl(tm - tf) : 'meta atingida') + '</div></div></div>';
+  h += '<div class="secao"><h2>Avanço de ' + nome + ' por projeto <span class="cnt">' + rows.length + '</span></h2></div>';
+  rows.forEach(function(r){
+    var ab = fcAbertos[r.k], cls = r.av == null ? '' : r.av >= 0.999 ? 'ok' : r.av >= 0.5 ? 'warn' : 'bad';
+    h += linhaProj(r.x, [['Meta (PR)', brl(r.meta)], [feitoR, brl(r.feito), '', r.real != null ? r.realF : (r.d.v ? 'lançado aqui' : '')], ['Avanço', r.av == null ? '—' : pct(r.av), cls], ['Status', esc(r.d.s || (r.real != null ? 'Fechado no Cierre' : '—'))]], ab, 'data-fca="' + r.k + '"');
+    if (ab) h += '<div class="det" style="display:flex;flex-wrap:wrap;gap:12px">' +
+      (r.real != null ? '<span class="small muted">Valor do ' + esc(r.realF) + '.</span>' : '<label class="small">' + (tipoB === 'fat' ? 'Solicitado' : 'Confirmado') + ' (R$)<br><input type="text" style="width:130px" data-fc="' + r.k + '" data-c="v" value="' + esc(r.d.v != null ? fmtN(r.d.v) : '') + '"></label>') +
+      '<label class="small">Previsão<br><input type="date" data-fc="' + r.k + '" data-c="p" value="' + esc(r.d.p || '') + '"></label>' +
+      '<label class="small">Status<br><select data-fc="' + r.k + '" data-c="s">' + ST.map(function(s){ return '<option' + (r.d.s === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="small" style="flex:1;min-width:200px">Comentário<br><input type="text" style="width:100%" data-fc="' + r.k + '" data-c="o" value="' + esc(r.d.o || '') + '"></label></div>';
+  });
+  h += '<div class="orig">Meta: linha ' + (tipoB === 'fat' ? 'FACTURACIÓN' : 'COBROS') + ' de ' + mr + ' na PR (ou no PréCierre). ' + feitoR + ': a mesma linha no Cierre ou na Prévia do Cierre; antes disso, o valor lançado aqui.</div>';
+  el.innerHTML = h;
+  el.querySelectorAll('[data-fca]').forEach(function(b){ b.onclick = function(){ fcAbertos[b.dataset.fca] = !fcAbertos[b.dataset.fca]; desenharFC1(xs, tipoB); }; });
+  el.querySelectorAll('[data-fc]').forEach(function(i){ i.onchange = function(){ var d = E.fc[i.dataset.fc] = E.fc[i.dataset.fc] || {}; d[i.dataset.c] = i.dataset.c === 'v' ? nnum(i.value) : i.value; salvar(); desenharFC1(xs, tipoB); }; });
+  el.querySelector('[data-xfc]').onclick = function(){
     var wb = XLSX.utils.book_new();
-    ['fat', 'cob'].forEach(function(t){
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(xs.map(function(x){ var pr = snapPR(x, M) || snapPC(x, M), re = snapReal(x, M), kL = t === 'fat' ? 'faturamento' : 'cobros', d = E.fc[x.c + '|' + ym + '|' + t] || {};
-        return { 'Código': x.c, 'Projeto': x.nome, 'Meta (PR)': vL(pr, kL, M), 'Realizado (Cierre)': vL(re, kL, M), 'Lançado aqui': d.v || null, 'Previsão': d.p || '', 'Status': d.s || '', 'Comentário': d.o || '' }; })), t === 'fat' ? 'Faturamento' : 'Cobro');
-    });
-    XLSX.writeFile(wb, 'Faturamento e Cobro ' + MES[M] + '-' + a + '.xlsx');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.map(function(r){ return { 'Código': r.x.c, 'Projeto': r.x.nome, 'Meta (PR)': r.meta, 'Realizado (Cierre)': r.real, 'Lançado aqui': r.d.v || null, 'Previsão': r.d.p || '', 'Status': r.d.s || '', 'Comentário': r.d.o || '' }; })), nome);
+    XLSX.writeFile(wb, nome + ' ' + MES[M] + '-' + a + '.xlsx');
   };
 }
 
@@ -1919,16 +1961,14 @@ function desenharRateio(xs){
   var du = diasUteis(a, M); if (R.dias == null) R.dias = du;
   var calc = R.pessoas.map(function(p){ return calcPessoa(p, xs, M, R); });
   var th = calc.reduce(function(s, c){ return s + c.horas; }, 0), tc = calc.reduce(function(s, c){ return s + c.custo; }, 0);
-  var h = '<div class="tools no-print"><button class="primary" id="rNova">+ Adicionar pessoa</button><button id="rCopia">Copiar do mês anterior</button><button id="rXlsx">Baixar em Excel</button>' +
-    '<label class="small">Dias úteis em ' + mr + ' <input type="number" id="rDias" step="1" min="0" style="width:70px" value="' + R.dias + '"></label>' +
-    '<label class="small">Jornada padrão (h/dia) <input type="number" id="rJorn" step="0.1" min="0" style="width:70px" value="' + R.jornada + '"></label></div>' +
-    '<div class="small muted" style="margin-bottom:10px">Dias úteis calculados: ' + du + ' (segunda a sexta menos feriados nacionais; ajuste se houver feriado local). As horas de cada pessoa são divididas entre os projetos marcados na proporção do Ingresos de ' + mr + ' no PréCierre (sem PréCierre, na PR do mês). Dá para fixar o % de um projeto à mão; o resto continua proporcional.</div>';
+  var h = '<div class="tools no-print" style="justify-content:flex-end"><button id="rCopia">Copiar do mês anterior</button><button id="rNova">+ Adicionar pessoa</button></div>' +
+    '<div class="small muted" style="margin-bottom:12px">Dias úteis em ' + mr + ': <input type="number" id="rDias" step="1" min="0" style="width:60px" value="' + R.dias + '"> (calculado: ' + du + ', sem feriado local) · jornada padrão <input type="number" id="rJorn" step="0.1" min="0" style="width:60px" value="' + R.jornada + '"> h/dia. As horas de cada pessoa são divididas entre os projetos marcados na proporção do Ingresos de ' + mr + ' no PréCierre.</div>';
   h += '<div class="kpis"><div class="kpi"><div class="l">Pessoas no rateio</div><div class="v">' + R.pessoas.length + '</div></div><div class="kpi"><div class="l">Horas rateadas no mês</div><div class="v">' + fmtN(th) + '</div></div><div class="kpi"><div class="l">Custo rateado no mês</div><div class="v">' + brl(tc) + '</div></div></div>';
   // resumo por projeto
   var porP = {};
   calc.forEach(function(c, i){ c.proj.forEach(function(q){ var o = porP[q.c] = porP[q.c] || { c: q.c, x: q.x, h: 0, custo: 0, pes: [] }; o.h += q.h; o.custo += q.custo; o.pes.push(R.pessoas[i].nome || '?'); }); });
   var pp = Object.keys(porP).map(function(k){ return porP[k]; }).sort(function(p, q){ return q.custo - p.custo; });
-  if (pp.length) h += '<div class="card"><h2>Por projeto (o que lançar em ' + mr + ')</h2><div class="scroll"><table><thead><tr><th>Projeto</th><th>Ingresos ' + MES[M] + ' (PréCierre)</th><th>Horas</th><th>Custo</th><th>Custo x Ingresos</th><th class="l">Pessoas</th></tr></thead><tbody>' +
+  if (pp.length) h += '<div class="card"><div class="secao" style="margin-top:0"><h2>Por projeto (o que lançar em ' + mr + ')</h2></div><div class="scroll"><table><thead><tr><th>Projeto</th><th>Ingresos ' + MES[M] + ' (PréCierre)</th><th>Horas</th><th>Custo</th><th>Custo x Ingresos</th><th class="l">Pessoas</th></tr></thead><tbody>' +
     pp.map(function(o){ var ing = o.x ? ingRateio(o.x, M) : null; return '<tr><td class="l"><b>' + esc(o.x ? o.x.nome : o.c) + '</b> <span class="muted small">' + o.c + '</span></td><td>' + brl(ing) + '</td><td>' + fmtN(o.h) + '</td><td>' + brl(o.custo) + '</td><td>' + (ing ? pct(o.custo / ing) : '—') + '</td><td class="l small">' + esc(o.pes.join(', ')) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
   R.pessoas.forEach(function(p, i){
     var c = calc[i], ab = rateioAberto[i];
@@ -1968,7 +2008,7 @@ function desenharRateio(xs){
   el.querySelectorAll('[data-rc]').forEach(function(inp){ inp.onchange = function(){ var k = inp.dataset.rc.split('|'), p = R.pessoas[+k[0]]; p.projs = (p.projs || []).filter(function(c){ return c !== k[1]; }); if (inp.checked) p.projs.push(k[1]); else if (p.pct) delete p.pct[k[1]]; red(); }; });
   el.querySelectorAll('[data-pp]').forEach(function(inp){ inp.onchange = function(){ var k = inp.dataset.pp.split('|'), p = R.pessoas[+k[0]], v = nnum(inp.value); p.pct = p.pct || {}; if (v == null) delete p.pct[k[1]]; else p.pct[k[1]] = v; red(); }; });
   el.querySelectorAll('[data-rdel]').forEach(function(b){ b.onclick = function(){ if (!confirm('Tirar esta pessoa do rateio de ' + mr + '?')) return; R.pessoas.splice(+b.dataset.rdel, 1); rateioAberto = {}; red(); }; });
-  document.getElementById('rXlsx').onclick = function(){
+  if (document.getElementById('rXlsx')) document.getElementById('rXlsx').onclick = function(){
     var rows = []; calc.forEach(function(c, i){ var p = R.pessoas[i]; c.proj.forEach(function(q){ rows.push({ 'Matrícula': p.matricula || '', 'Pessoa': p.nome || '', 'Taxa (R$/h)': p.taxa || null, 'Projeto': q.c, 'Nome do projeto': q.x ? q.x.nome : '', '% do rateio': Math.round(q.p * 10000) / 100, 'Horas': Math.round(q.h * 100) / 100, 'Horas por dia': Math.round(q.hd * 100) / 100, 'Custo': Math.round(q.custo * 100) / 100 }); }); });
     var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Rateio ' + MES[M]); XLSX.writeFile(wb, 'Rateio de pessoas ' + MES[M] + '-' + a + '.xlsx');
   };
@@ -1982,29 +2022,31 @@ function desenharTransf(xs){
   E.transf = E.transf || {};
   var L = E.transf[ym] = E.transf[ym] || [];
   var tc = L.reduce(function(s, t){ return s + (t.horas || 0) * (t.taxa || 0); }, 0), th = L.reduce(function(s, t){ return s + (t.horas || 0); }, 0);
-  var v = trEdit != null ? L[trEdit] : {};
+  var v = trEdit != null && trEdit >= 0 ? L[trEdit] : {};
   var opt = function(sel){ return '<option value=""></option>' + xs.map(function(x){ return '<option value="' + x.c + '"' + (sel === x.c ? ' selected' : '') + '>' + x.c + ' ' + esc(x.nome) + '</option>'; }).join(''); };
   var campo = function(rot, id, val, w, ph){ return '<label class="small">' + rot + ' <input type="text" id="t_' + id + '" style="width:' + (w || 120) + 'px" value="' + esc(val == null ? '' : val) + '" placeholder="' + (ph || '') + '"></label>'; };
   var h = '<div class="small muted" style="margin-bottom:10px">Transferências de horas entre projetos e empresas em ' + mr + '. O custo sai de horas × taxa. "Baixar em Excel" gera uma planilha com uma linha por transferência, para colar na aba BASE da planilha do mês.</div>';
   h += '<div class="kpis"><div class="kpi"><div class="l">Transferências em ' + mr + '</div><div class="v">' + L.length + '</div></div><div class="kpi"><div class="l">Horas</div><div class="v">' + fmtN(th) + '</div></div><div class="kpi"><div class="l">Custo transferido</div><div class="v">' + brl(tc) + '</div></div></div>';
-  h += '<div class="card no-print"><h2>' + (trEdit != null ? 'Editar transferência' : 'Nova transferência') + '</h2><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">' +
+  h = '<div class="tools no-print" style="justify-content:flex-end"><button id="tX">Exportar Excel</button><button id="tCop">Copiar do mês anterior</button><button id="tNova">+ Nova transferência</button></div>' + h;
+  if (trEdit != null) h += '<div class="card no-print"><h2>' + (trEdit >= 0 ? 'Editar transferência' : 'Nova transferência') + '</h2><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">' +
     campo('Matrícula', 'mat', v.mat, 100) + campo('Pessoa', 'pes', v.pes, 220) + campo('Horas', 'horas', v.horas != null ? fmtN(v.horas) : '', 80) + campo('Taxa (R$/h)', 'taxa', v.taxa != null ? fmtN(v.taxa) : '', 100) +
     '<label class="small">Folha variável <select id="t_fv"><option></option><option' + (v.fv === 'SIM' ? ' selected' : '') + '>SIM</option><option' + (v.fv === 'NÃO' ? ' selected' : '') + '>NÃO</option></select></label></div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px"><label class="small">Projeto de origem <select id="t_po">' + opt(v.po) + '</select></label>' + campo('ou outro código', 'po2', xs.some(function(x){ return x.c === v.po; }) ? '' : v.po, 90, '26AP00') + campo('EDT origem', 'eo', v.eo, 90) + campo('Empresa origem', 'emo', v.emo, 70, 'A3') + '</div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px"><label class="small">Projeto de destino <select id="t_pd">' + opt(v.pd) + '</select></label>' + campo('ou outro código', 'pd2', xs.some(function(x){ return x.c === v.pd; }) ? '' : v.pd, 90) + campo('EDT destino', 'ed', v.ed, 90) + campo('Empresa destino', 'emd', v.emd, 70, 'B2') + '</div>' +
     '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">' + campo('Motivo', 'mot', v.mot, 380) + '</div>' +
-    '<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="tSalva">' + (trEdit != null ? 'Salvar' : 'Adicionar') + '</button>' + (trEdit != null ? '<button id="tCanc">Cancelar edição</button>' : '') + '<span class="small bad" id="tErr"></span></div></div>';
-  h += '<div class="card"><div class="tools" style="margin:0 0 8px"><b style="flex:1">Transferências de ' + mr + '</b><button id="tX">Baixar em Excel</button><button id="tCop">Copiar do mês anterior</button></div>';
+    '<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="tSalva">' + (trEdit >= 0 ? 'Salvar' : 'Adicionar') + '</button><button id="tCanc">Cancelar</button><span class="small bad" id="tErr"></span></div></div>';
+  h += '<div class="card"><div class="secao" style="margin-top:0"><h2>Transferências de ' + mr + ' <span class="cnt">' + L.length + '</span></h2></div>';
   if (!L.length) h += '<div class="empty">Nenhuma transferência cadastrada em ' + mr + '.</div>';
   else h += '<div class="scroll"><table><thead><tr><th>Matrícula</th><th class="l">Pessoa</th><th>Horas</th><th>Taxa</th><th>Custo</th><th class="l">Origem</th><th class="l">Destino</th><th class="l">Motivo</th><th></th></tr></thead><tbody>' +
     L.map(function(t, i){ return '<tr><td>' + esc(t.mat || '') + '</td><td class="l">' + esc(t.pes || '') + '</td><td>' + fmtN(t.horas) + '</td><td>' + fmtN(t.taxa) + '</td><td>' + brl((t.horas || 0) * (t.taxa || 0)) + '</td><td class="l small">' + esc([t.po, t.eo, t.emo].filter(Boolean).join(' · ')) + '</td><td class="l small">' + esc([t.pd, t.ed, t.emd].filter(Boolean).join(' · ')) + '</td><td class="l small">' + esc(t.mot || '') + '</td><td><button class="link small" data-ted="' + i + '">editar</button><button class="link small" data-tdel="' + i + '">tirar</button></td></tr>'; }).join('') + '</tbody></table></div>';
   h += '</div>';
   el.innerHTML = h;
   var g = function(id){ var e = document.getElementById('t_' + id); return e ? e.value.trim() : ''; };
-  document.getElementById('tSalva').onclick = function(){
+  document.getElementById('tNova').onclick = function(){ trEdit = -1; desenharTransf(xs); };
+  if (document.getElementById('tSalva')) document.getElementById('tSalva').onclick = function(){
     var t = { mat: g('mat'), pes: g('pes'), horas: nnum(g('horas')), taxa: nnum(g('taxa')), fv: g('fv'), po: (g('po2') || g('po')).toUpperCase(), eo: g('eo'), emo: g('emo').toUpperCase(), pd: (g('pd2') || g('pd')).toUpperCase(), ed: g('ed'), emd: g('emd').toUpperCase(), mot: g('mot') };
     if (!t.horas || !t.po || !t.pd) { document.getElementById('tErr').textContent = 'Preencha pelo menos horas, projeto de origem e de destino.'; return; }
-    if (trEdit != null) L[trEdit] = t; else L.push(t); trEdit = null; salvar(); desenharTransf(xs);
+    if (trEdit >= 0) L[trEdit] = t; else L.push(t); trEdit = null; salvar(); desenharTransf(xs);
   };
   var cc = document.getElementById('tCanc'); if (cc) cc.onclick = function(){ trEdit = null; desenharTransf(xs); };
   el.querySelectorAll('[data-ted]').forEach(function(b){ b.onclick = function(){ trEdit = +b.dataset.ted; desenharTransf(xs); window.scrollTo(0, 0); }; });
@@ -2069,16 +2111,16 @@ function desenhar26(xs){
     '<div class="kpi"><div class="l">% sobre o ingresso</div><div class="v ' + (C.pct == null ? '' : ok(C.pct <= meta)) + '">' + (C.pct == null ? '—' : pct(C.pct)) + '</div><div class="d">meta até <input type="text" id="r26Meta" style="width:50px" value="' + fmtN(R.meta) + '">% · base ' + brl(C.ingT) + '</div></div>' +
     '<div class="kpi"><div class="l">26AP00 depois do traspasso</div><div class="v ' + ok(Math.abs(C.saldo) < 0.01) + '">' + (Math.abs(C.saldo) < 0.01 ? 'Zerado' : brl(C.saldo)) + '</div><div class="d">' + (Math.abs(C.saldo) < 0.01 ? 'pode enviar o traspasso' : 'sobra sem projeto: confira a base') + '</div></div></div>';
   // custos
-  var v = r26Edit != null ? R.custos[r26Edit] : {};
-  h += '<div class="card"><div class="tools" style="margin:0 0 8px"><b style="flex:1">Custos que caíram no 26AP00 em ' + mr + '</b><button id="r26Cola">Colar do Excel</button><button id="r26Fixos">Trazer os fixos do mês anterior</button></div>' +
-    '<div class="no-print" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px">' +
+  var v = r26Edit != null && r26Edit >= 0 ? R.custos[r26Edit] : {};
+  h += '<div class="card"><div class="secao" style="margin-top:0"><h2>Custos que caíram no 26AP00 <span class="cnt">' + R.custos.length + '</span></h2><button id="r26Fixos">Trazer os fixos do mês anterior</button><button id="r26Nova">+ Lançar custo</button></div>' +
+    (r26Edit == null ? '' : '<div class="no-print" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px;padding:12px;background:var(--soft);border-radius:10px">' +
     '<label class="small">Data <input type="date" id="c26d" value="' + esc(v.d || '') + '"></label>' +
     '<label class="small">Tipo <select id="c26t">' + TIPOS26.map(function(t){ return '<option' + (v.t === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label>' +
     '<label class="small">Descrição <input type="text" id="c26x" style="width:240px" value="' + esc(v.x || '') + '" placeholder="ex.: pessoa, licença"></label>' +
     '<label class="small">Valor (R$) <input type="text" id="c26v" style="width:110px" value="' + (v.v != null ? fmtN(v.v) : '') + '"></label>' +
     '<label class="small">Situação <select id="c26s">' + ST26.map(function(t){ return '<option' + (v.s === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label>' +
     '<label class="small"><input type="checkbox" id="c26f"' + (v.fixo ? ' checked' : '') + '> fixo todo mês</label>' +
-    '<button class="primary" id="c26ok">' + (r26Edit != null ? 'Salvar' : 'Lançar') + '</button>' + (r26Edit != null ? '<button id="c26can">Cancelar</button>' : '') + '</div>';
+    '<button class="primary" id="c26ok">' + (r26Edit >= 0 ? 'Salvar' : 'Lançar') + '</button><button id="c26can">Cancelar</button></div>');
   if (R.custos.length) {
     var porT = {}; R.custos.forEach(function(c){ porT[c.t] = (porT[c.t] || 0) + (c.v || 0); });
     h += '<div class="small" style="margin-bottom:6px">' + Object.keys(porT).map(function(t){ return esc(t) + ': <b>' + brl(porT[t]) + '</b>'; }).join(' · ') + '</div>';
@@ -2087,7 +2129,7 @@ function desenhar26(xs){
   } else h += '<div class="empty">Nenhum custo lançado em ' + mr + '.</div>';
   h += '</div>';
   // base e traspasso
-  h += '<div class="card"><div class="tools" style="margin:0 0 8px"><b style="flex:1">Projetos que recebem o rateio e traspasso de ' + mr + '</b><button id="r26Add">+ Projeto</button><button id="r26ColaB">Colar projetos e EDTs</button><button id="r26CopB">Copiar do mês anterior</button><button class="primary" id="r26X">Baixar traspasso (Excel)</button></div>';
+  h += '<div class="card"><div class="secao" style="margin-top:0"><h2>Traspasso por projeto <span class="cnt">' + R.base.length + '</span></h2><button id="r26CopB">Copiar do mês anterior</button><button id="r26Add">+ Projeto</button><button class="primary" id="r26X">Baixar traspasso</button></div>';
   if (!R.base.length) h += '<div class="empty">Nenhum projeto na base. Use "Copiar do mês anterior" ou "Colar projetos e EDTs" (Código | EDT). Confirme a lista do mês com quem define os projetos.</div>';
   else {
     h += '<div class="scroll"><table><thead><tr><th>Entra?</th><th class="l">Projeto</th><th class="l">EDT</th><th>Ingresos ' + MES[M] + '</th><th class="l">De onde</th><th>Teto (%)</th><th>Valor do traspasso</th><th>% do ingresso</th><th></th></tr></thead><tbody>';
@@ -2107,10 +2149,11 @@ function desenhar26(xs){
   document.getElementById('r26Sis').onchange = function(e){ R.sistema = nnum(e.target.value); red(); };
   document.getElementById('r26Meta').onchange = function(e){ R.meta = nnum(e.target.value) || 3; red(); };
   var g = function(id){ return document.getElementById(id); };
-  g('c26ok').onclick = function(){
+  g('r26Nova').onclick = function(){ r26Edit = -1; desenhar26(xs); };
+  if (g('c26ok')) g('c26ok').onclick = function(){
     var c = { d: g('c26d').value, t: g('c26t').value, x: g('c26x').value.trim(), v: nnum(g('c26v').value), s: g('c26s').value, fixo: g('c26f').checked };
     if (c.v == null) { alert('Informe o valor.'); return; }
-    if (r26Edit != null) R.custos[r26Edit] = c; else R.custos.push(c); r26Edit = null; red();
+    if (r26Edit >= 0) R.custos[r26Edit] = c; else R.custos.push(c); r26Edit = null; red();
   };
   if (g('c26can')) g('c26can').onclick = function(){ r26Edit = null; desenhar26(xs); };
   el.querySelectorAll('[data-c26e]').forEach(function(b){ b.onclick = function(){ r26Edit = +b.dataset.c26e; desenhar26(xs); }; });
@@ -2121,14 +2164,18 @@ function desenhar26(xs){
     if (!fx.length) { alert('Nenhum custo marcado como fixo em ' + ymRot(mesAnt) + '.'); return; }
     fx.forEach(function(c){ R.custos.push({ d: '', t: c.t, x: c.x, v: c.v, s: 'Pendente', fixo: true }); }); red();
   };
-  g('r26Cola').onclick = function(){
+  if (g('r26Cola')) g('r26Cola').onclick = function(){
     var t = prompt('Cole as linhas do Excel com as colunas: Data | Tipo | Descrição | Valor (Tipo pode ficar vazio).'); if (!t) return;
     t.split(/\r?\n/).forEach(function(l){ var p = l.split('\t'); if (p.length < 2) return; var v = nnum(p[p.length - 1]); if (v == null) return;
       var dd = normData(p[0], String(a)); R.custos.push({ d: dd, t: TIPOS26.indexOf((p[1] || '').trim()) >= 0 ? p[1].trim() : 'Diversos', x: (p.length > 3 ? p[2] : p[1] || '').trim(), v: v, s: 'Pendente' }); });
     red();
   };
-  g('r26Add').onclick = function(){ var c = (prompt('Código do projeto (ex.: 26AP01):') || '').toUpperCase().match(/\d{2}AP\d{2}/); if (!c) return; if (!R.base.some(function(b){ return b.c === c[0]; })) R.base.push({ c: c[0], edt: '' }); red(); };
-  g('r26ColaB').onclick = function(){
+  g('r26Add').onclick = function(){
+    var t = prompt('Código do projeto (ex.: 26AP01). Para vários de uma vez, cole do Excel: Código | EDT'); if (!t) return;
+    t.split(/\r?\n/).forEach(function(l){ var p = l.split('\t'), c = (p[0] || '').toUpperCase().match(/\d{2}AP\d{2}/); if (!c) return; var b = R.base.find(function(z){ return z.c === c[0]; }); if (!b) { b = { c: c[0], edt: '' }; R.base.push(b); } if (p[1]) b.edt = p[1].trim(); });
+    red();
+  };
+  if (g('r26ColaB')) g('r26ColaB').onclick = function(){
     var t = prompt('Cole as linhas do Excel: Código | EDT | Ingresso (o ingresso é opcional).'); if (!t) return;
     t.split(/\r?\n/).forEach(function(l){ var p = l.split('\t'), c = (p[0] || '').toUpperCase().match(/\d{2}AP\d{2}/); if (!c) return;
       var b = R.base.find(function(z){ return z.c === c[0]; }); if (!b) { b = { c: c[0] }; R.base.push(b); }
@@ -2154,17 +2201,28 @@ function desenhar26(xs){
 }
 
 // ================= geral =================
+var TITULOS = { comp: 'Comparativo PR x PréCierre', res: 'Prometido x realizado', dpf: 'Controle de DPF', ing: 'Ingresso e demandas', prev: 'Detalhes por projeto', r26: 'Rateio 26AP00', rat: 'Rateio de pessoas', tr: 'Transferências entre empresas', cal: 'Calendário de fechamento', fat: 'Faturamento', cob: 'Cobro', cart: 'Projetos', arq: 'Arquivos lidos' };
+var abaAtual = 'comp';
 function irAba(t){
-  document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.t === t); });
+  if (!TITULOS[t]) t = 'comp'; abaAtual = t;
+  document.querySelectorAll('#tabs [data-t]').forEach(function(b){ b.classList.toggle('on', b.dataset.t === t); });
+  document.querySelectorAll('#tabs .tg').forEach(function(g){ var on = !!g.querySelector('[data-t="' + t + '"]'); g.classList.toggle('on', on); var s = g.querySelector('.tgs'); if (s) s.textContent = on && g.dataset.g ? ' › ' + g.querySelector('[data-t="' + t + '"]').textContent : ''; g.classList.remove('aberto'); });
+  document.getElementById('titulo').textContent = TITULOS[t];
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('on', p.id === 'p-' + t); });
-  document.getElementById('filtros').style.display = (t === 'cal' || t === 'arq' || t === 'r26') ? 'none' : '';
+  document.getElementById('filtros').style.display = (t === 'cal' || t === 'arq' || t === 'r26' || t === 'tr') ? 'none' : '';
   try { localStorage.setItem(CHAVE + '.aba', t); } catch(x) {}
 }
 function desenhar(){
   var todos = analisar(), xs = filtrar(todos);
-  montarMesRef(); montarFiltros(todos); desenharAvisos(todos); desenharComp(xs); desenharFC(xs); desenharRateio(xs); desenharTransf(xs); desenhar26(todos); desenharCart(xs); desenharPrev(xs); desenharRel(xs); desenharRes(xs); desenharDPF(xs); desenharIng(xs); desenharCal(); desenharArq(); infoPasta();
+  montarMesRef(); montarFiltros(todos); desenharAvisos(todos); desenharComp(xs); desenharFC(xs); document.getElementById('heroSub').textContent = todos.length + ' projeto' + (todos.length === 1 ? '' : 's') + ' na carteira · mês de referência: ' + rotMes(mesRef(), anoRef()) + ' · os dados ficam só neste computador'; desenharRateio(xs); desenharTransf(xs); desenhar26(todos); desenharCart(xs); desenharPrev(xs); desenharRel(xs); desenharRes(xs); desenharDPF(xs); desenharIng(xs); desenharCal(); desenharArq(); infoPasta();
 }
-document.getElementById('tabs').onclick = function(ev){ var t = ev.target.dataset.t; if (t) irAba(t); };
+document.getElementById('tabs').onclick = function(ev){
+  ev.stopPropagation(); var b = ev.target.closest('button'); if (!b) return;
+  if (b.dataset.t) { irAba(b.dataset.t); window.scrollTo(0, 0); return; }
+  var g = b.closest('.tg'), ab = g.classList.contains('aberto');
+  document.querySelectorAll('#tabs .tg').forEach(function(x){ x.classList.remove('aberto'); }); if (!ab) g.classList.add('aberto');
+};
+document.addEventListener('click', function(){ document.querySelectorAll('#tabs .tg').forEach(function(x){ x.classList.remove('aberto'); }); });
 document.getElementById('bAtualizar').onclick = atualizarDaPasta;
 document.getElementById('bPasta').onclick = escolherPasta;
 document.getElementById('bArq').onclick = function(){ document.getElementById('fArq').click(); };
