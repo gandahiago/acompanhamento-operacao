@@ -34,6 +34,7 @@ button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:
 button:hover{border-color:var(--accent)}
 button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 button.link{border:none;background:none;color:var(--accent);padding:2px 4px}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
 input[type=number],input[type=date],input[type=time],input[type=month],input[type=text],textarea{font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
 input[type=number]{width:110px}
 nav.tabs{display:flex;gap:4px;margin-top:14px;flex-wrap:wrap}
@@ -164,10 +165,16 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
   </div>
   <div class="prog" id="prog"><i></i></div>
   <div class="small muted" id="status"></div>
+  <div class="bar" style="margin-top:10px"><label class="small"><b>Mês de referência</b> <select id="mesRef"></select></label><span class="small muted">vale para Comparativo, Faturamento e Cobro, Rateios e Transferências</span></div>
   <nav class="tabs" id="tabs">
-   <button data-t="res" class="on">Resumo do mês</button>
+   <button data-t="comp" class="on">Comparativo</button>
+   <button data-t="res">Prometido x realizado</button>
+   <button data-t="fc">Faturamento e Cobro</button>
    <button data-t="dpf">Controle de DPF</button>
    <button data-t="ing">Ingresso e demandas</button>
+   <button data-t="r26">Rateio 26AP00</button>
+   <button data-t="rat">Rateio de pessoas</button>
+   <button data-t="tr">Transferências</button>
    <button data-t="cal">Calendário</button>
    <button data-t="prev">Detalhes por projeto</button>
    <button data-t="cart">Projetos</button>
@@ -180,7 +187,12 @@ dialog::backdrop{background:rgba(0,0,0,.35)}
  <div class="drop" id="drop">Arraste para cá as PRs (.xlsb), as consolidadas (PréCierre, Cierre e prévias) ou o calendário de fechamento (PDF).</div>
  <div class="tools" id="filtros"></div>
 
- <section class="panel on" id="p-res"><div id="resOut"></div></section>
+ <section class="panel on" id="p-comp"><div id="compOut"></div></section>
+ <section class="panel" id="p-res"><div id="resOut"></div></section>
+ <section class="panel" id="p-fc"><div id="fcOut"></div></section>
+ <section class="panel" id="p-r26"><div id="r26Out"></div></section>
+ <section class="panel" id="p-rat"><div id="ratOut"></div></section>
+ <section class="panel" id="p-tr"><div id="trOut"></div></section>
  <section class="panel" id="p-dpf"><div id="dpfOut"></div></section>
  <section class="panel" id="p-ing"><div id="ingOut"></div></section>
  <section class="panel" id="p-cal">
@@ -531,7 +543,7 @@ function decifrar(env, ck){
 }
 function guardado(){ try { return JSON.parse(localStorage.getItem(CHAVE) || 'null'); } catch(x) { return null; } }
 var E = (function(){ var g = guardado(); return g && g.cifra ? completar(base()) : carregar(); })();
-function base(){ return { retratos: [], cfg: { tol: 5, min: 10000, folgaDPF: 1000, soCarteira: true, soForecast: true, carteira: CARTEIRA_PADRAO.slice() }, poaManual: {}, planos: {}, simDPF: {}, medicoes: {}, mri: {}, demandas: {}, demTotal: {}, valorPF: {}, just: {}, comAno: {}, marcos: {}, cal: [], f: {}, lidos: {}, projetos: {} }; }
+function base(){ return { retratos: [], cfg: { tol: 5, min: 10000, folgaDPF: 1000, soCarteira: true, soForecast: true, carteira: CARTEIRA_PADRAO.slice() }, poaManual: {}, planos: {}, simDPF: {}, medicoes: {}, mri: {}, demandas: {}, demTotal: {}, valorPF: {}, just: {}, comAno: {}, marcos: {}, cal: [], f: {}, lidos: {}, projetos: {}, obs: {}, fc: {}, rateio: {}, transf: {}, r26: {} }; }
 function carregar(){
   var e = guardado();
   if (!e || e.cifra) { e = base(); e.retratos = SEED.slice(); }
@@ -683,6 +695,7 @@ function desenharAvisos(xs){
   if (dsp.length) av.push(['bad', dsp.length + ' projeto' + (dsp.length > 1 ? 's' : '') + ' com DPF acima do corrente sem plano que zere: ' + dsp.slice(0, 6).map(function(x){ return x.nome; }).join(', '), 'dpf']);
   var dup = xs.filter(function(x){ return x.ingCtl && x.ingCtl.k === 'bad'; });
   if (dup.length) av.push(['bad', dup.length + ' projeto' + (dup.length > 1 ? 's' : '') + ' com problema de ingresso (demanda duplicada ou acima do contratado): ' + dup.slice(0, 6).map(function(x){ return x.nome; }).join(', '), 'ing']);
+  try { var R26 = (E.r26 || {})[ymRef()]; if (R26 && R26.custos.length) { var C26 = calc26(R26, mesRef()); if (Math.abs(C26.saldo) >= 0.01) av.push(['bad', '26AP00 de ' + rotMes(mesRef(), anoRef()) + ' não fecha zerado: sobram ' + brl(C26.saldo) + ' sem projeto', 'r26']); else if (C26.pct != null && C26.pct > (R26.meta || 3) / 100) av.push(['warn', 'Rateio do 26AP00 em ' + pct(C26.pct) + ' do ingresso, acima da meta de ' + fmtN(R26.meta || 3) + '%', 'r26']); if (C26.difSis != null && Math.abs(C26.difSis) >= 0.01) av.push(['warn', 'Custos lançados no 26AP00 não batem com o sistema (' + sinal(C26.difSis) + ')', 'r26']); } } catch(e) {}
   var sj = xs.reduce(function(s, x){ return s + x.semJust; }, 0);
   if (sj) av.push(['warn', sj + ' mês(es) com resultado abaixo do previsto ainda sem justificativa', 'prev']);
   var semPR = (E.cfg.carteira || []).filter(function(c){ return !xs.some(function(x){ return x.c === c; }); });
@@ -1673,16 +1686,483 @@ document.getElementById('pOk').onclick = function(){
   if (!projEditando) status(c + ' incluído. Clique em "Atualizar da pasta" para ler as PRs dele.');
 };
 
+// ================= v11 (16/11/2026): Comparativo, Faturamento e Cobro, Rateio 26AP00, Rateio de pessoas, Transferências =================
+// Mês de referência, Comparativo (PR x PréCierre x POA), Faturamento e Cobro, Rateio de pessoas, Transferências.
+
+// ---------- mês de referência ----------
+function mesAuto(){
+  var ms = E.retratos.filter(function(r){ return (E.cfg.carteira || []).indexOf(r.codigo) >= 0 && r.mesPR >= 0 && /PR|PréCierre/.test(tipo(r)); }).map(mesPR);
+  return ms.length ? Math.min(11, Math.max.apply(null, ms)) : new Date().getMonth();
+}
+function mesRef(){ return E.cfg.mesRef != null ? E.cfg.mesRef : mesAuto(); }
+function anoRef(){ var r = E.retratos[0]; return r ? r.ano : new Date().getFullYear(); }
+function ymRef(){ return anoRef() + '-' + String(mesRef() + 1).padStart(2, '0'); }
+function montarMesRef(){
+  var el = document.getElementById('mesRef'); if (!el) return;
+  var a = anoRef(), auto = mesAuto();
+  el.innerHTML = '<option value="">Automático (' + rotMes(auto, a) + ')</option>' + MES.map(function(m, i){ return '<option value="' + i + '"' + (E.cfg.mesRef === i ? ' selected' : '') + '>' + rotMes(i, a) + '</option>'; }).join('');
+  el.onchange = function(){ E.cfg.mesRef = el.value === '' ? null : +el.value; salvar(); desenhar(); };
+}
+
+// ---------- fontes do mês ----------
+function snapPR(x, M){ return x.lista.filter(function(r){ return tipo(r) === 'PR' && mesPR(r) === M; }).slice(-1)[0] || null; }
+function snapPC(x, M){
+  var P = ['PréCierre', 'Prévia PréCierre'];
+  return x.lista.filter(function(r){ return P.indexOf(tipo(r)) >= 0 && mesPR(r) === M && !r.fcVazio; }).sort(function(a, b){ return P.indexOf(tipo(a)) - P.indexOf(tipo(b)); })[0] || null;
+}
+function snapReal(x, M){
+  var P = ['Cierre', 'Prévia Cierre', 'Consolidado', 'PR', 'PréCierre', 'Prévia PréCierre'];
+  return x.lista.filter(function(r){ return r.flags[M] === 'REAL' && mesPR(r) > M; }).sort(function(a, b){ return (P.indexOf(tipo(a)) - P.indexOf(tipo(b))) || (mesPR(a) - mesPR(b)); })[0] || null;
+}
+function vL(r, k, i){ if (!r || !r.linhas[k] || r.linhas[k][i] == null) return null; return r.linhas[k][i]; }
+function poaDe(x, k, i){
+  var fontes = x.lista.slice().reverse();
+  for (var j = 0; j < fontes.length; j++) { var p = fontes[j].poa; if (p && p[k] && p[k][i] != null) return p[k][i]; }
+  if (i === 12 && E.poaManual[x.c]) return k === 'ingresso' ? E.poaManual[x.c].i : E.poaManual[x.c].m;
+  return null;
+}
+function nivelDiv(pr, pc){
+  if (pr == null || pc == null) return 'wait';
+  var d = Math.abs(pr - pc), p = pc ? d / Math.abs(pc) : (d ? Infinity : 0), tol = E.cfg.tol / 100;
+  if (d < E.cfg.min || p <= tol) return 'ok';
+  return p <= 2 * tol ? 'warn' : 'bad';
+}
+var NIV = { ok: ['p-ok', 'Divergência pequena'], warn: ['p-warn', 'Atenção'], bad: ['p-bad', 'Divergência relevante'], wait: ['p-wait', 'Sem par para comparar'] };
+function pctTxt(a, b){ if (a == null || b == null || !b) return '—'; var p = (a - b) / Math.abs(b); return (p > 0 ? '+' : p < 0 ? '−' : '') + pct(Math.abs(p)); }
+function tendDPF(x, M){
+  var r = snapPR(x, M) || snapPC(x, M) || x.at;
+  var a = vL(r, 'dpfAntigo', M), b = M > 0 ? (x.sa && x.sa[M - 1] != null ? x.sa[M - 1] : vL(r, 'dpfAntigo', M - 1)) : null;
+  if (a == null) { if (x.dpfA == null) return { t: 'sem dado', k: 'wait', d: null, v: null }; a = x.dpfA; b = x.dpfAant; }
+  var d = b == null ? null : a - b;
+  if (d == null || Math.abs(d) < Math.max(1, E.cfg.folgaDPF)) return { t: '● Estável', k: 'ok', d: d, v: a };
+  return d > 0 ? { t: '▲ Subindo', k: 'bad', d: d, v: a } : { t: '▼ Caindo', k: 'ok', d: d, v: a };
+}
+
+// ---------- aba Comparativo ----------
+var soDiv = false, compAbertos = {};
+function dadosComp(x, M){
+  var pr = snapPR(x, M), pc = snapPC(x, M);
+  var lin = function(k){ return { pr: vL(pr, k, M), pc: vL(pc, k, M) }; };
+  var mp = function(r, i){ var I = vL(r, 'ingresso', i), G = vL(r, 'margem', i); return I ? G / I : null; };
+  var o = { x: x, pr: pr, pc: pc, ing: lin('ingresso'), fat: lin('faturamento'), cob: lin('cobros'), mar: lin('margem'), dpf: lin('dpf'), dpfA: lin('dpfAntigo'), alo: lin('alo'),
+    mp: { pr: mp(pr, M), pc: mp(pc, M) }, poaI: poaDe(x, 'ingresso', M), poaM: poaDe(x, 'margem', M),
+    anoI: { pr: vL(pr, 'ingresso', 12), pc: vL(pc, 'ingresso', 12), poa: poaDe(x, 'ingresso', 12) }, anoM: { pr: vL(pr, 'margem', 12), pc: vL(pc, 'margem', 12), poa: poaDe(x, 'margem', 12) },
+    tend: tendDPF(x, M) };
+  o.k = nivelDiv(o.ing.pr, o.ing.pc);
+  if (o.k === 'ok' && o.mp.pr != null && o.mp.pc != null && Math.abs(o.mp.pr - o.mp.pc) > 0.02) o.k = 'warn';
+  return o;
+}
+function desenharComp(xs){
+  var el = document.getElementById('compOut'); if (!el) return;
+  var M = mesRef(), a = anoRef(), mr = rotMes(M, a);
+  if (!xs.length) { el.innerHTML = '<div class="empty">Nenhum projeto carregado ou dentro dos filtros.</div>'; return; }
+  var D = xs.map(function(x){ return dadosComp(x, M); });
+  var ambos = D.filter(function(o){ return o.ing.pr != null && o.ing.pc != null; });
+  var s = function(lst, f){ return lst.reduce(function(t, o){ var v = f(o); return t + (v || 0); }, 0); };
+  var iPR = s(ambos, function(o){ return o.ing.pr; }), iPC = s(ambos, function(o){ return o.ing.pc; }), mPR = s(ambos, function(o){ return o.mar.pr; }), mPC = s(ambos, function(o){ return o.mar.pc; });
+  var aPR = s(ambos, function(o){ return o.anoI.pr; }), aPC = s(ambos, function(o){ return o.anoI.pc; });
+  var sub = D.filter(function(o){ return o.tend.t.indexOf('Subindo') >= 0; }), cai = D.filter(function(o){ return o.tend.t.indexOf('Caindo') >= 0; }), est = D.filter(function(o){ return o.tend.t.indexOf('Estável') >= 0; });
+  var saldo = s(D, function(o){ return o.tend.d; });
+  var semPR = D.filter(function(o){ return !o.pr; }).length, semPC = D.filter(function(o){ return !o.pc; }).length;
+  var h = '<div class="tools no-print" style="margin-bottom:10px"><b style="flex:1">PR x PréCierre de ' + mr + '</b>' +
+    '<label class="small"><input type="checkbox" id="cSoDiv"' + (soDiv ? ' checked' : '') + '> Só divergentes</label>' +
+    '<button id="bCopRes">Copiar resumo para e-mail</button><button id="bMail">Abrir e-mail</button><button onclick="window.print()">Imprimir ou PDF</button><button id="bXComp">Baixar em Excel</button></div>';
+  h += '<div class="kpis">' +
+    '<div class="kpi"><div class="l">Ingresos de ' + mr + ' (PR)</div><div class="v">' + brl(iPR) + '</div><div class="d">' + pctTxt(iPR, iPC) + ' x PréCierre (' + sinal(iPR - iPC) + ')</div></div>' +
+    '<div class="kpi"><div class="l">Margen (%) de ' + mr + ' (PR)</div><div class="v">' + mpct(mPR, iPR) + '</div><div class="d">PréCierre ' + mpct(mPC, iPC) + '</div></div>' +
+    '<div class="kpi"><div class="l">Ingresos do ano (PR)</div><div class="v">' + brl(aPR) + '</div><div class="d">' + pctTxt(aPR, aPC) + ' x PréCierre</div></div>' +
+    '<div class="kpi"><div class="l">DPF &gt; Corrente</div><div class="v">' + sub.length + ' subindo</div><div class="d">' + cai.length + ' caindo · ' + est.length + ' estáveis · saldo ' + sinal(saldo) + '</div></div></div>';
+  if (semPR || semPC) h += '<div class="prom no-print" style="margin-bottom:12px">⚠ ' + (semPR ? semPR + ' projeto(s) sem a PR de ' + mr + ' lida' : '') + (semPR && semPC ? '; ' : '') + (semPC ? semPC + ' sem o PréCierre de ' + mr : '') + '. Eles aparecem na lista, mas sem comparação. Os totais acima somam só os ' + ambos.length + ' com os dois.</div>';
+  // top 5
+  var top = ambos.slice().sort(function(p, q){ return Math.abs(q.ing.pr - q.ing.pc) - Math.abs(p.ing.pr - p.ing.pc); }).filter(function(o){ return Math.abs(o.ing.pr - o.ing.pc) >= 1; }).slice(0, 5);
+  if (top.length) h += '<div class="card"><h2>Maiores diferenças de Ingresos (PR x PréCierre)</h2><div class="kpis" style="margin-bottom:0">' + top.map(function(o){ var d = o.ing.pr - o.ing.pc;
+    return '<div class="kpi"><div class="l"><b>' + o.x.c + '</b> ' + esc(o.x.nome) + '</div><div class="small">PR ' + brl(o.ing.pr) + ' · PréCierre ' + brl(o.ing.pc) + '</div><div class="d ' + (d < 0 ? 'bad' : 'ok') + '"><b>' + brl(Math.abs(d)) + (d < 0 ? ' abaixo' : ' acima') + ' do previsto</b></div></div>'; }).join('') + '</div></div>';
+  // lista por projeto
+  var lst = D.slice().sort(function(p, q){ return ORD[p.k] - ORD[q.k] || Math.abs((q.ing.pr || 0) - (q.ing.pc || 0)) - Math.abs((p.ing.pr || 0) - (p.ing.pc || 0)); });
+  if (soDiv) lst = lst.filter(function(o){ return o.k === 'bad' || o.k === 'warn'; });
+  h += '<div class="legenda small"><span><span class="pill p-ok">Divergência pequena</span></span><span><span class="pill p-warn">Atenção</span></span><span><span class="pill p-bad">Divergência relevante</span></span><span class="muted">pela tolerância dos Ajustes (' + E.cfg.tol + '% e ' + brl(E.cfg.min) + ')</span></div>';
+  lst.forEach(function(o){
+    var x = o.x, ab = compAbertos[x.c], ok = x.c + '|' + M, obs = (E.obs || {})[ok] || '';
+    h += '<div class="card proj st-' + ({ bad: 'crit', warn: 'aten', ok: 'bom' }[o.k] || '') + ' rel-card"><h2><span>' + esc(x.nome) + ' <span class="muted" style="font-weight:400;font-size:14px">' + x.c + '</span></span><span class="pill ' + NIV[o.k][0] + '">' + NIV[o.k][1] + '</span></h2>' +
+      '<div class="kpis" style="margin:10px 0 4px">' +
+      '<div class="kpi"><div class="l">Ingresos ' + mr + ' (PR)</div><div class="v">' + brl(o.ing.pr) + '</div><div class="d">' + pctTxt(o.ing.pr, o.ing.pc) + ' x PréCierre</div></div>' +
+      '<div class="kpi"><div class="l">Margen (%) ' + mr + '</div><div class="v">' + (o.mp.pr != null ? pct(o.mp.pr) : '—') + '</div><div class="d">PréCierre ' + (o.mp.pc != null ? pct(o.mp.pc) : '—') + '</div></div>' +
+      '<div class="kpi"><div class="l">DPF &gt; Corrente</div><div class="v ' + (o.tend.k === 'bad' ? 'bad' : '') + '">' + o.tend.t + '</div><div class="d">' + (o.tend.d != null ? sinal(o.tend.d) + ' no mês' : '') + '</div></div></div>' +
+      (obs && !ab ? '<div class="prom small"><b>Observação:</b> ' + esc(obs) + '</div>' : '') +
+      '<button class="link no-print" data-cab="' + x.c + '">' + (ab ? 'Esconder detalhe ▴' : 'Ver detalhe (PR x PréCierre x POA, ano, observação) ▾') + '</button>';
+    if (ab) {
+      var row = function(rot, p, c, poa, ruimSubir, ehPct){ var f = function(v){ return v == null ? '—' : ehPct ? pct(v) : brl(v); }, d1 = corDif(c, p, ruimSubir, ehPct), d2 = poa == null ? { c: '', t: '—' } : corDif(poa, p, ruimSubir, ehPct);
+        return '<tr><td class="l">' + rot + '</td><td><b>' + f(p) + '</b></td><td>' + f(c) + '</td><td class="' + d1.c + '">' + d1.t + '</td><td>' + (poa === undefined ? '' : f(poa)) + '</td><td class="' + (poa === undefined ? '' : d2.c) + '">' + (poa === undefined ? '' : d2.t) + '</td></tr>'; };
+      var poaMp = o.poaI ? o.poaM / o.poaI : null;
+      h += '<div class="scroll" style="margin-top:8px"><table class="cmp3"><thead><tr><th>' + mr + '</th><th>PR<div class="fx">' + esc(o.pr ? o.pr.arquivo : 'não carregada') + '</div></th><th>PréCierre<div class="fx">' + esc(o.pc ? rotFonte(o.pc) : 'não carregado') + '</div></th><th>PR x PréCierre</th><th>POA</th><th>PR x POA</th></tr></thead><tbody>' +
+        row('Ingresos', o.ing.pr, o.ing.pc, o.poaI, false) + row('Facturación', o.fat.pr, o.fat.pc, undefined, false) + row('Cobros', o.cob.pr, o.cob.pc, undefined, false) +
+        row('Margen', o.mar.pr, o.mar.pc, o.poaM, false) + row('Margen (%)', o.mp.pr, o.mp.pc, poaMp, false, true) +
+        row('DPF', o.dpf.pr, o.dpf.pc, undefined, true) + row('DPF &gt; Corrente', o.dpfA.pr, o.dpfA.pc, undefined, true) + row('ALO', o.alo.pr, o.alo.pc, undefined, true) +
+        '</tbody></table></div>';
+      var amp = function(I, G){ return I ? G / I : null; };
+      h += '<div class="scroll" style="margin-top:8px"><table class="cmp3"><thead><tr><th>Ano ' + a + '</th><th>PR</th><th>PréCierre</th><th>PR x PréCierre</th><th>POA</th><th>PR x POA</th></tr></thead><tbody>' +
+        row('Ingresos do ano', o.anoI.pr, o.anoI.pc, o.anoI.poa, false) + row('Margen (%) do ano', amp(o.anoI.pr, o.anoM.pr), amp(o.anoI.pc, o.anoM.pc), amp(o.anoI.poa, o.anoM.poa), false, true) + '</tbody></table></div>';
+      h += '<label class="small" style="display:block;margin-top:8px">Observação de ' + mr + ' (sai no resumo e no PDF)<textarea data-obs="' + ok + '" placeholder="Por que a PR ficou diferente do PréCierre?">' + esc(obs) + '</textarea></label>';
+      h += '<div class="orig">De onde vem: PR do projeto (aba RESUMO, mês ' + MES[M] + ') e PréCierre consolidado (aba FC, mesmo mês). POA: aba POA da PR ou colunas POA da aba FC. DPF &gt; Corrente: linha "DPF > CORRENTE" da PR.</div>';
+    }
+    h += '</div>';
+  });
+  el.innerHTML = h;
+  document.getElementById('cSoDiv').onchange = function(e){ soDiv = e.target.checked; desenharComp(xs); };
+  el.querySelectorAll('[data-cab]').forEach(function(b){ b.onclick = function(){ compAbertos[b.dataset.cab] = !compAbertos[b.dataset.cab]; desenharComp(xs); }; });
+  el.querySelectorAll('textarea[data-obs]').forEach(function(t){ t.onchange = function(){ E.obs = E.obs || {}; E.obs[t.dataset.obs] = t.value.trim(); salvar(); }; });
+  var texto = function(){ return resumoTexto(D, M, a, { iPR: iPR, iPC: iPC, mPR: mPR, mPC: mPC, aPR: aPR, aPC: aPC, sub: sub.length, cai: cai.length, top: top }); };
+  document.getElementById('bCopRes').onclick = function(){ var t = texto(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ status('Resumo copiado. Cole no e-mail (Ctrl+V).'); }).catch(function(){ prompt('Copie o resumo:', t); }); };
+  document.getElementById('bMail').onclick = function(){ var t = texto(); location.href = 'mailto:?subject=' + encodeURIComponent('PR x PréCierre ' + mr) + '&body=' + encodeURIComponent(t.slice(0, 1800)); };
+  document.getElementById('bXComp').onclick = function(){
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(D.map(function(o){ return { 'Código': o.x.c, 'Projeto': o.x.nome, 'Situação': NIV[o.k][1],
+      'Ingresos PR': o.ing.pr, 'Ingresos PréCierre': o.ing.pc, 'Ingresos POA': o.poaI, 'Facturación PR': o.fat.pr, 'Facturación PréCierre': o.fat.pc, 'Cobros PR': o.cob.pr, 'Cobros PréCierre': o.cob.pc,
+      'Margen PR': o.mar.pr, 'Margen PréCierre': o.mar.pc, 'Margen (%) PR': o.mp.pr, 'Margen (%) PréCierre': o.mp.pc, 'DPF > Corrente PR': o.dpfA.pr, 'Tendência DPF > Corrente': o.tend.t,
+      'Ingresos ano PR': o.anoI.pr, 'Ingresos ano PréCierre': o.anoI.pc, 'Ingresos ano POA': o.anoI.poa, 'Observação': (E.obs || {})[o.x.c + '|' + M] || '' }; })), 'Comparativo ' + MES[M]);
+    XLSX.writeFile(wb, 'Comparativo PR x PreCierre ' + MES[M] + '-' + a + '.xlsx');
+  };
+}
+function resumoTexto(D, M, a, t){
+  var mr = rotMes(M, a), L = [];
+  L.push('PR x PréCierre de ' + mr);
+  L.push('');
+  L.push('Ingresos do mês (PR): ' + brl(t.iPR) + ' (' + pctTxt(t.iPR, t.iPC) + ' x PréCierre, ' + sinal(t.iPR - t.iPC) + ')');
+  L.push('Margen do mês (PR): ' + mpct(t.mPR, t.iPR) + ' (PréCierre ' + mpct(t.mPC, t.iPC) + ')');
+  L.push('Ingresos do ano (PR): ' + brl(t.aPR) + ' (' + pctTxt(t.aPR, t.aPC) + ' x PréCierre)');
+  L.push('DPF > Corrente: ' + t.sub + ' projeto(s) subindo, ' + t.cai + ' caindo');
+  if (t.top.length) { L.push(''); L.push('Maiores diferenças:'); t.top.forEach(function(o){ var d = o.ing.pr - o.ing.pc; L.push('- ' + o.x.c + ' ' + o.x.nome + ': ' + brl(Math.abs(d)) + (d < 0 ? ' abaixo' : ' acima') + ' do PréCierre' + ((E.obs || {})[o.x.c + '|' + M] ? ' (' + E.obs[o.x.c + '|' + M] + ')' : '')); }); }
+  var outras = D.filter(function(o){ return (E.obs || {})[o.x.c + '|' + M] && t.top.indexOf(o) < 0; });
+  if (outras.length) { L.push(''); L.push('Observações:'); outras.forEach(function(o){ L.push('- ' + o.x.c + ' ' + o.x.nome + ': ' + E.obs[o.x.c + '|' + M]); }); }
+  return L.join('\n');
+}
+
+// ---------- aba Faturamento e Cobro ----------
+var ST_FAT = ['', 'Medição enviada ao cliente', 'Aguardando aceite', 'Nota solicitada', 'Nota emitida', 'Sem faturamento no mês'];
+var ST_COB = ['', 'Aguardando vencimento', 'Vencida, cobrando', 'Recebido em parte', 'Recebido'];
+function desenharFC(xs){
+  var el = document.getElementById('fcOut'); if (!el) return;
+  var M = mesRef(), a = anoRef(), mr = rotMes(M, a), ym = a + '-' + String(M + 1).padStart(2, '0');
+  if (!xs.length) { el.innerHTML = '<div class="empty">Nenhum projeto carregado ou dentro dos filtros.</div>'; return; }
+  E.fc = E.fc || {};
+  var bloco = function(tipoB){
+    var kL = tipoB === 'fat' ? 'faturamento' : 'cobros', ST = tipoB === 'fat' ? ST_FAT : ST_COB, nome = tipoB === 'fat' ? 'Faturamento' : 'Cobro';
+    var rows = xs.map(function(x){
+      var pr = snapPR(x, M) || snapPC(x, M), meta = vL(pr, kL, M), re = snapReal(x, M), real = vL(re, kL, M), k = x.c + '|' + ym + '|' + tipoB, d = E.fc[k] || {};
+      var feito = real != null ? real : (d.v || 0);
+      return { x: x, meta: meta, metaF: pr ? rotFonte(pr) : '', real: real, realF: re ? rotFonte(re) : '', d: d, k: k, feito: feito, av: meta ? feito / meta : null };
+    });
+    var tm = rows.reduce(function(s, r){ return s + (r.meta || 0); }, 0), tf = rows.reduce(function(s, r){ return s + (r.feito || 0); }, 0);
+    var h = '<div class="card"><h2>' + nome + ' de ' + mr + '</h2><div class="kpis">' +
+      '<div class="kpi"><div class="l">Meta do mês (PR)</div><div class="v">' + brl(tm) + '</div></div>' +
+      '<div class="kpi"><div class="l">' + (tipoB === 'fat' ? 'Faturado' : 'Recebido') + ' (Cierre ou lançado aqui)</div><div class="v">' + brl(tf) + '</div></div>' +
+      '<div class="kpi"><div class="l">Avanço</div><div class="v ' + (tm && tf / tm < 1 ? 'warn' : 'ok') + '">' + (tm ? pct(tf / tm) : '—') + '</div><div class="d">falta ' + brl(Math.max(0, tm - tf)) + '</div></div></div>';
+    h += '<div class="scroll"><table><thead><tr><th>Projeto</th><th>Meta (PR)</th><th>' + (tipoB === 'fat' ? 'Faturado' : 'Recebido') + '</th><th>Avanço</th><th class="l">' + (tipoB === 'fat' ? 'Solicitado (R$)' : 'Confirmado (R$)') + '</th><th class="l">Previsão</th><th class="l">Status</th><th class="l">Comentário</th></tr></thead><tbody>';
+    rows.sort(function(p, q){ return (q.meta || 0) - (p.meta || 0); }).forEach(function(r){
+      var cls = r.av == null ? '' : r.av >= 0.999 ? 'c-bom' : r.av >= 0.5 ? 'c-aten' : 'c-crit';
+      h += '<tr><td class="l"><b>' + esc(r.x.nome) + '</b> <span class="muted small">' + r.x.c + '</span>' + (r.metaF ? '<div class="fx muted small">' + esc(r.metaF) + '</div>' : '') + '</td><td>' + brl(r.meta) + '</td>' +
+        '<td>' + (r.real != null ? brl(r.real) + '<div class="muted small">' + esc(r.realF) + '</div>' : brl(r.d.v || 0)) + '</td><td class="' + cls + '">' + (r.av == null ? '—' : pct(r.av)) + '</td>' +
+        '<td class="l">' + (r.real != null ? '<span class="muted small">já no Cierre</span>' : '<input type="text" style="width:120px" data-fc="' + r.k + '" data-c="v" value="' + esc(r.d.v != null ? fmtN(r.d.v) : '') + '" placeholder="0,00">') + '</td>' +
+        '<td class="l"><input type="date" data-fc="' + r.k + '" data-c="p" value="' + esc(r.d.p || '') + '"></td>' +
+        '<td class="l"><select data-fc="' + r.k + '" data-c="s">' + ST.map(function(s){ return '<option' + (r.d.s === s ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select></td>' +
+        '<td class="l"><input type="text" style="min-width:160px" data-fc="' + r.k + '" data-c="o" value="' + esc(r.d.o || '') + '"></td></tr>';
+    });
+    h += '</tbody></table></div><div class="orig">Meta = linha ' + (tipoB === 'fat' ? '"FACTURACIÓN"' : '"COBROS"') + ' de ' + mr + ' na PR do mês (ou no PréCierre, se a PR não estiver lida). ' + (tipoB === 'fat' ? 'Faturado' : 'Recebido') + ' = a mesma linha no Cierre ou Prévia do Cierre, quando carregados; antes disso vale o valor que você lançar aqui. Quando o Cierre chegar, ele substitui o lançado.</div></div>';
+    return h;
+  };
+  el.innerHTML = '<div class="tools no-print"><button id="bXFC">Baixar em Excel</button></div>' + bloco('fat') + bloco('cob');
+  el.querySelectorAll('[data-fc]').forEach(function(i){ i.onchange = function(){
+    var d = E.fc[i.dataset.fc] = E.fc[i.dataset.fc] || {};
+    d[i.dataset.c] = i.dataset.c === 'v' ? nnum(i.value) : i.value; salvar(); desenharFC(xs);
+  }; });
+  document.getElementById('bXFC').onclick = function(){
+    var wb = XLSX.utils.book_new();
+    ['fat', 'cob'].forEach(function(t){
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(xs.map(function(x){ var pr = snapPR(x, M) || snapPC(x, M), re = snapReal(x, M), kL = t === 'fat' ? 'faturamento' : 'cobros', d = E.fc[x.c + '|' + ym + '|' + t] || {};
+        return { 'Código': x.c, 'Projeto': x.nome, 'Meta (PR)': vL(pr, kL, M), 'Realizado (Cierre)': vL(re, kL, M), 'Lançado aqui': d.v || null, 'Previsão': d.p || '', 'Status': d.s || '', 'Comentário': d.o || '' }; })), t === 'fat' ? 'Faturamento' : 'Cobro');
+    });
+    XLSX.writeFile(wb, 'Faturamento e Cobro ' + MES[M] + '-' + a + '.xlsx');
+  };
+}
+
+// ---------- aba Rateio de pessoas ----------
+function pascoa(y){ var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1; return new Date(y, mes - 1, dia); }
+function feriados(y){
+  var p = pascoa(y), add = function(n){ var d = new Date(p); d.setDate(d.getDate() + n); return d; };
+  var fix = [[1, 1], [4, 21], [5, 1], [9, 7], [10, 12], [11, 2], [11, 15], [11, 20], [12, 25]].map(function(md){ return new Date(y, md[0] - 1, md[1]); });
+  return fix.concat([add(-2)]).map(function(d){ return d.toISOString().slice(0, 10); });
+}
+function diasUteis(y, m){
+  var fs = feriados(y), n = 0, d = new Date(y, m, 1);
+  while (d.getMonth() === m) { var w = d.getDay(), s = new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); if (w > 0 && w < 6 && fs.indexOf(s) < 0) n++; d.setDate(d.getDate() + 1); }
+  return n;
+}
+function ingRateio(x, M){ var r = snapPC(x, M) || snapPR(x, M); return vL(r, 'ingresso', M); }
+function calcPessoa(p, xs, M, R){
+  var jorn = p.jornada || R.jornada || 8.8, horas = p.horas != null ? p.horas : R.dias * jorn;
+  var proj = (p.projs || []).map(function(c){ var x = xs.find(function(y){ return y.c === c; }); return { c: c, x: x, ing: x ? Math.max(0, ingRateio(x, M) || 0) : 0 }; });
+  var tot = proj.reduce(function(s, q){ return s + q.ing; }, 0), man = p.pct || {};
+  var somaMan = proj.reduce(function(s, q){ return s + (man[q.c] != null ? man[q.c] : 0); }, 0), livres = proj.filter(function(q){ return man[q.c] == null; }), totLivre = livres.reduce(function(s, q){ return s + q.ing; }, 0);
+  proj.forEach(function(q){
+    q.manual = man[q.c] != null;
+    q.p = q.manual ? man[q.c] / 100 : (totLivre > 0 ? q.ing / totLivre * Math.max(0, 1 - somaMan / 100) : (livres.length ? Math.max(0, 1 - somaMan / 100) / livres.length : 0));
+    q.h = horas * q.p; q.hd = jorn * q.p; q.custo = q.h * (p.taxa || 0);
+  });
+  return { horas: horas, jorn: jorn, dias: jorn ? horas / jorn : 0, proj: proj, custo: horas * (p.taxa || 0), soma: proj.reduce(function(s, q){ return s + q.p; }, 0), semIng: tot === 0 };
+}
+var rateioAberto = {};
+function desenharRateio(xs){
+  var el = document.getElementById('ratOut'); if (!el) return;
+  var M = mesRef(), a = anoRef(), mr = rotMes(M, a), ym = ymRef();
+  E.rateio = E.rateio || {};
+  var R = E.rateio[ym] = E.rateio[ym] || { dias: null, jornada: 8.8, pessoas: [] };
+  var du = diasUteis(a, M); if (R.dias == null) R.dias = du;
+  var calc = R.pessoas.map(function(p){ return calcPessoa(p, xs, M, R); });
+  var th = calc.reduce(function(s, c){ return s + c.horas; }, 0), tc = calc.reduce(function(s, c){ return s + c.custo; }, 0);
+  var h = '<div class="tools no-print"><button class="primary" id="rNova">+ Adicionar pessoa</button><button id="rCopia">Copiar do mês anterior</button><button id="rXlsx">Baixar em Excel</button>' +
+    '<label class="small">Dias úteis em ' + mr + ' <input type="number" id="rDias" step="1" min="0" style="width:70px" value="' + R.dias + '"></label>' +
+    '<label class="small">Jornada padrão (h/dia) <input type="number" id="rJorn" step="0.1" min="0" style="width:70px" value="' + R.jornada + '"></label></div>' +
+    '<div class="small muted" style="margin-bottom:10px">Dias úteis calculados: ' + du + ' (segunda a sexta menos feriados nacionais; ajuste se houver feriado local). As horas de cada pessoa são divididas entre os projetos marcados na proporção do Ingresos de ' + mr + ' no PréCierre (sem PréCierre, na PR do mês). Dá para fixar o % de um projeto à mão; o resto continua proporcional.</div>';
+  h += '<div class="kpis"><div class="kpi"><div class="l">Pessoas no rateio</div><div class="v">' + R.pessoas.length + '</div></div><div class="kpi"><div class="l">Horas rateadas no mês</div><div class="v">' + fmtN(th) + '</div></div><div class="kpi"><div class="l">Custo rateado no mês</div><div class="v">' + brl(tc) + '</div></div></div>';
+  // resumo por projeto
+  var porP = {};
+  calc.forEach(function(c, i){ c.proj.forEach(function(q){ var o = porP[q.c] = porP[q.c] || { c: q.c, x: q.x, h: 0, custo: 0, pes: [] }; o.h += q.h; o.custo += q.custo; o.pes.push(R.pessoas[i].nome || '?'); }); });
+  var pp = Object.keys(porP).map(function(k){ return porP[k]; }).sort(function(p, q){ return q.custo - p.custo; });
+  if (pp.length) h += '<div class="card"><h2>Por projeto (o que lançar em ' + mr + ')</h2><div class="scroll"><table><thead><tr><th>Projeto</th><th>Ingresos ' + MES[M] + ' (PréCierre)</th><th>Horas</th><th>Custo</th><th>Custo x Ingresos</th><th class="l">Pessoas</th></tr></thead><tbody>' +
+    pp.map(function(o){ var ing = o.x ? ingRateio(o.x, M) : null; return '<tr><td class="l"><b>' + esc(o.x ? o.x.nome : o.c) + '</b> <span class="muted small">' + o.c + '</span></td><td>' + brl(ing) + '</td><td>' + fmtN(o.h) + '</td><td>' + brl(o.custo) + '</td><td>' + (ing ? pct(o.custo / ing) : '—') + '</td><td class="l small">' + esc(o.pes.join(', ')) + '</td></tr>'; }).join('') + '</tbody></table></div></div>';
+  R.pessoas.forEach(function(p, i){
+    var c = calc[i], ab = rateioAberto[i];
+    h += '<div class="card"><h2><span>' + esc(p.nome || 'Pessoa sem nome') + ' <span class="muted small" style="font-weight:400">' + esc(p.matricula || '') + '</span></span><span class="small" style="font-weight:400">' + brl(c.custo) + '</span></h2>' +
+      '<div class="small muted">Taxa ' + (p.taxa ? 'R$ ' + fmtN(p.taxa) + '/h' : 'não informada') + ' · ' + fmtN(c.horas) + ' h no mês · ' + fmtN(c.jorn) + ' h/dia · ' + c.proj.length + ' projeto(s)' + (c.proj.length && Math.abs(c.soma - 1) > 0.001 ? ' · <span class="bad">soma ' + pct(c.soma) + ', não 100%</span>' : '') + '</div>';
+    if (c.proj.length) h += '<div class="scroll" style="margin-top:8px"><table><thead><tr><th>Projeto</th><th>Ingresos ' + MES[M] + '</th><th>% do rateio</th><th>Horas</th><th>Horas por dia</th><th>Custo</th></tr></thead><tbody>' +
+      c.proj.map(function(q){ return '<tr><td class="l">' + esc(q.x ? q.x.nome : q.c) + ' <span class="muted small">' + q.c + '</span></td><td>' + brl(q.ing) + '</td><td><input type="text" style="width:70px" data-pp="' + i + '|' + q.c + '" value="' + (q.manual ? fmtN(q.p * 100) : '') + '" placeholder="' + fmtN(q.p * 100) + '"> %</td><td>' + fmtN(q.h) + '</td><td>' + fmtN(q.hd) + '</td><td>' + brl(q.custo) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    h += '<button class="link no-print" data-rab="' + i + '">' + (ab ? 'Fechar edição ▴' : 'Editar pessoa e projetos ▾') + '</button>';
+    if (ab) {
+      h += '<div class="no-print" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">' +
+        '<label class="small">Nome <input type="text" data-rp="' + i + '|nome" value="' + esc(p.nome || '') + '"></label>' +
+        '<label class="small">Matrícula <input type="text" style="width:100px" data-rp="' + i + '|matricula" value="' + esc(p.matricula || '') + '"></label>' +
+        '<label class="small">Taxa (R$/h) <input type="text" style="width:100px" data-rp="' + i + '|taxa" value="' + (p.taxa != null ? fmtN(p.taxa) : '') + '"></label>' +
+        '<label class="small">Jornada (h/dia) <input type="text" style="width:70px" data-rp="' + i + '|jornada" value="' + (p.jornada != null ? fmtN(p.jornada) : '') + '" placeholder="' + fmtN(R.jornada) + '"></label>' +
+        '<label class="small">Horas no mês <input type="text" style="width:90px" data-rp="' + i + '|horas" value="' + (p.horas != null ? fmtN(p.horas) : '') + '" placeholder="' + fmtN(R.dias * (p.jornada || R.jornada)) + '"></label></div>' +
+        '<div class="small" style="margin-top:8px"><b>Projetos do rateio:</b></div><div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px">' +
+        xs.map(function(x){ return '<label class="small"><input type="checkbox" data-rc="' + i + '|' + x.c + '"' + ((p.projs || []).indexOf(x.c) >= 0 ? ' checked' : '') + '> ' + x.c + ' ' + esc(x.nome) + '</label>'; }).join('') + '</div>' +
+        '<div style="margin-top:8px"><button class="link small bad" data-rdel="' + i + '">Tirar esta pessoa do mês</button></div>';
+    }
+    h += '</div>';
+  });
+  if (!R.pessoas.length) h += '<div class="empty">Ninguém no rateio de ' + mr + '. Use "+ Adicionar pessoa" ou "Copiar do mês anterior".</div>';
+  h += '<div class="orig">Custo da pessoa = horas no mês × taxa. Horas por dia = jornada × % do rateio (o que lançar por dia em cada projeto). Fica guardado só neste navegador (e na cópia dos dados), protegido pela senha da página se você tiver definido uma.</div>';
+  el.innerHTML = h;
+  var red = function(){ salvar(); desenharRateio(xs); };
+  document.getElementById('rNova').onclick = function(){ R.pessoas.push({ nome: '', projs: [] }); rateioAberto[R.pessoas.length - 1] = true; red(); };
+  document.getElementById('rDias').onchange = function(e){ R.dias = nnum(e.target.value) || 0; red(); };
+  document.getElementById('rJorn').onchange = function(e){ R.jornada = nnum(e.target.value) || 8.8; red(); };
+  document.getElementById('rCopia').onclick = function(){
+    var ant = M > 0 ? a + '-' + String(M).padStart(2, '0') : (a - 1) + '-12', A = E.rateio[ant];
+    if (!A || !A.pessoas.length) { alert('Não há rateio em ' + ymRot(ant) + '.'); return; }
+    if (R.pessoas.length && !confirm('Trocar as ' + R.pessoas.length + ' pessoa(s) de ' + mr + ' pelas de ' + ymRot(ant) + '?')) return;
+    R.pessoas = JSON.parse(JSON.stringify(A.pessoas)).map(function(p){ delete p.horas; return p; }); R.jornada = A.jornada; red();
+  };
+  el.querySelectorAll('[data-rab]').forEach(function(b){ b.onclick = function(){ rateioAberto[b.dataset.rab] = !rateioAberto[b.dataset.rab]; desenharRateio(xs); }; });
+  el.querySelectorAll('[data-rp]').forEach(function(inp){ inp.onchange = function(){ var k = inp.dataset.rp.split('|'), p = R.pessoas[+k[0]]; p[k[1]] = /nome|matricula/.test(k[1]) ? inp.value.trim() : nnum(inp.value); if (p[k[1]] == null) delete p[k[1]]; red(); }; });
+  el.querySelectorAll('[data-rc]').forEach(function(inp){ inp.onchange = function(){ var k = inp.dataset.rc.split('|'), p = R.pessoas[+k[0]]; p.projs = (p.projs || []).filter(function(c){ return c !== k[1]; }); if (inp.checked) p.projs.push(k[1]); else if (p.pct) delete p.pct[k[1]]; red(); }; });
+  el.querySelectorAll('[data-pp]').forEach(function(inp){ inp.onchange = function(){ var k = inp.dataset.pp.split('|'), p = R.pessoas[+k[0]], v = nnum(inp.value); p.pct = p.pct || {}; if (v == null) delete p.pct[k[1]]; else p.pct[k[1]] = v; red(); }; });
+  el.querySelectorAll('[data-rdel]').forEach(function(b){ b.onclick = function(){ if (!confirm('Tirar esta pessoa do rateio de ' + mr + '?')) return; R.pessoas.splice(+b.dataset.rdel, 1); rateioAberto = {}; red(); }; });
+  document.getElementById('rXlsx').onclick = function(){
+    var rows = []; calc.forEach(function(c, i){ var p = R.pessoas[i]; c.proj.forEach(function(q){ rows.push({ 'Matrícula': p.matricula || '', 'Pessoa': p.nome || '', 'Taxa (R$/h)': p.taxa || null, 'Projeto': q.c, 'Nome do projeto': q.x ? q.x.nome : '', '% do rateio': Math.round(q.p * 10000) / 100, 'Horas': Math.round(q.h * 100) / 100, 'Horas por dia': Math.round(q.hd * 100) / 100, 'Custo': Math.round(q.custo * 100) / 100 }); }); });
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Rateio ' + MES[M]); XLSX.writeFile(wb, 'Rateio de pessoas ' + MES[M] + '-' + a + '.xlsx');
+  };
+}
+
+// ---------- aba Transferências entre empresas ----------
+var trEdit = null;
+function desenharTransf(xs){
+  var el = document.getElementById('trOut'); if (!el) return;
+  var M = mesRef(), a = anoRef(), mr = rotMes(M, a), ym = ymRef();
+  E.transf = E.transf || {};
+  var L = E.transf[ym] = E.transf[ym] || [];
+  var tc = L.reduce(function(s, t){ return s + (t.horas || 0) * (t.taxa || 0); }, 0), th = L.reduce(function(s, t){ return s + (t.horas || 0); }, 0);
+  var v = trEdit != null ? L[trEdit] : {};
+  var opt = function(sel){ return '<option value=""></option>' + xs.map(function(x){ return '<option value="' + x.c + '"' + (sel === x.c ? ' selected' : '') + '>' + x.c + ' ' + esc(x.nome) + '</option>'; }).join(''); };
+  var campo = function(rot, id, val, w, ph){ return '<label class="small">' + rot + ' <input type="text" id="t_' + id + '" style="width:' + (w || 120) + 'px" value="' + esc(val == null ? '' : val) + '" placeholder="' + (ph || '') + '"></label>'; };
+  var h = '<div class="small muted" style="margin-bottom:10px">Transferências de horas entre projetos e empresas em ' + mr + '. O custo sai de horas × taxa. "Baixar em Excel" gera uma planilha com uma linha por transferência, para colar na aba BASE da planilha do mês.</div>';
+  h += '<div class="kpis"><div class="kpi"><div class="l">Transferências em ' + mr + '</div><div class="v">' + L.length + '</div></div><div class="kpi"><div class="l">Horas</div><div class="v">' + fmtN(th) + '</div></div><div class="kpi"><div class="l">Custo transferido</div><div class="v">' + brl(tc) + '</div></div></div>';
+  h += '<div class="card no-print"><h2>' + (trEdit != null ? 'Editar transferência' : 'Nova transferência') + '</h2><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">' +
+    campo('Matrícula', 'mat', v.mat, 100) + campo('Pessoa', 'pes', v.pes, 220) + campo('Horas', 'horas', v.horas != null ? fmtN(v.horas) : '', 80) + campo('Taxa (R$/h)', 'taxa', v.taxa != null ? fmtN(v.taxa) : '', 100) +
+    '<label class="small">Folha variável <select id="t_fv"><option></option><option' + (v.fv === 'SIM' ? ' selected' : '') + '>SIM</option><option' + (v.fv === 'NÃO' ? ' selected' : '') + '>NÃO</option></select></label></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px"><label class="small">Projeto de origem <select id="t_po">' + opt(v.po) + '</select></label>' + campo('ou outro código', 'po2', xs.some(function(x){ return x.c === v.po; }) ? '' : v.po, 90, '26AP00') + campo('EDT origem', 'eo', v.eo, 90) + campo('Empresa origem', 'emo', v.emo, 70, 'A3') + '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px"><label class="small">Projeto de destino <select id="t_pd">' + opt(v.pd) + '</select></label>' + campo('ou outro código', 'pd2', xs.some(function(x){ return x.c === v.pd; }) ? '' : v.pd, 90) + campo('EDT destino', 'ed', v.ed, 90) + campo('Empresa destino', 'emd', v.emd, 70, 'B2') + '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">' + campo('Motivo', 'mot', v.mot, 380) + '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:10px"><button class="primary" id="tSalva">' + (trEdit != null ? 'Salvar' : 'Adicionar') + '</button>' + (trEdit != null ? '<button id="tCanc">Cancelar edição</button>' : '') + '<span class="small bad" id="tErr"></span></div></div>';
+  h += '<div class="card"><div class="tools" style="margin:0 0 8px"><b style="flex:1">Transferências de ' + mr + '</b><button id="tX">Baixar em Excel</button><button id="tCop">Copiar do mês anterior</button></div>';
+  if (!L.length) h += '<div class="empty">Nenhuma transferência cadastrada em ' + mr + '.</div>';
+  else h += '<div class="scroll"><table><thead><tr><th>Matrícula</th><th class="l">Pessoa</th><th>Horas</th><th>Taxa</th><th>Custo</th><th class="l">Origem</th><th class="l">Destino</th><th class="l">Motivo</th><th></th></tr></thead><tbody>' +
+    L.map(function(t, i){ return '<tr><td>' + esc(t.mat || '') + '</td><td class="l">' + esc(t.pes || '') + '</td><td>' + fmtN(t.horas) + '</td><td>' + fmtN(t.taxa) + '</td><td>' + brl((t.horas || 0) * (t.taxa || 0)) + '</td><td class="l small">' + esc([t.po, t.eo, t.emo].filter(Boolean).join(' · ')) + '</td><td class="l small">' + esc([t.pd, t.ed, t.emd].filter(Boolean).join(' · ')) + '</td><td class="l small">' + esc(t.mot || '') + '</td><td><button class="link small" data-ted="' + i + '">editar</button><button class="link small" data-tdel="' + i + '">tirar</button></td></tr>'; }).join('') + '</tbody></table></div>';
+  h += '</div>';
+  el.innerHTML = h;
+  var g = function(id){ var e = document.getElementById('t_' + id); return e ? e.value.trim() : ''; };
+  document.getElementById('tSalva').onclick = function(){
+    var t = { mat: g('mat'), pes: g('pes'), horas: nnum(g('horas')), taxa: nnum(g('taxa')), fv: g('fv'), po: (g('po2') || g('po')).toUpperCase(), eo: g('eo'), emo: g('emo').toUpperCase(), pd: (g('pd2') || g('pd')).toUpperCase(), ed: g('ed'), emd: g('emd').toUpperCase(), mot: g('mot') };
+    if (!t.horas || !t.po || !t.pd) { document.getElementById('tErr').textContent = 'Preencha pelo menos horas, projeto de origem e de destino.'; return; }
+    if (trEdit != null) L[trEdit] = t; else L.push(t); trEdit = null; salvar(); desenharTransf(xs);
+  };
+  var cc = document.getElementById('tCanc'); if (cc) cc.onclick = function(){ trEdit = null; desenharTransf(xs); };
+  el.querySelectorAll('[data-ted]').forEach(function(b){ b.onclick = function(){ trEdit = +b.dataset.ted; desenharTransf(xs); window.scrollTo(0, 0); }; });
+  el.querySelectorAll('[data-tdel]').forEach(function(b){ b.onclick = function(){ if (!confirm('Tirar esta transferência?')) return; L.splice(+b.dataset.tdel, 1); trEdit = null; salvar(); desenharTransf(xs); }; });
+  document.getElementById('tCop').onclick = function(){
+    var ant = M > 0 ? a + '-' + String(M).padStart(2, '0') : (a - 1) + '-12', A = E.transf[ant];
+    if (!A || !A.length) { alert('Não há transferências em ' + ymRot(ant) + '.'); return; }
+    A.forEach(function(t){ L.push(JSON.parse(JSON.stringify(t))); }); salvar(); desenharTransf(xs);
+  };
+  document.getElementById('tX').onclick = function(){
+    var rows = L.map(function(t){ return { 'Mês competência': MES[M].toUpperCase(), 'Matrícula': t.mat, 'Pessoa': t.pes, 'Qtd. de horas': t.horas, 'Transferir folha variável': t.fv, 'Projeto origem': t.po, 'EDT origem': t.eo, 'Empresa origem': t.emo, 'Projeto destino': t.pd, 'EDT destino': t.ed, 'Empresa destino': t.emd, 'Taxa (R$/h)': t.taxa, 'Custo da transferência': Math.round((t.horas || 0) * (t.taxa || 0) * 100) / 100, 'Motivo': t.mot }; });
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'BASE'); XLSX.writeFile(wb, 'Transferencias ' + MES[M] + '-' + a + '.xlsx');
+  };
+}
+
+// ---------- aba Rateio 26AP00 (custo de estrutura -> traspasso por projeto e EDT) ----------
+// Processo do rateio: todo custo de estrutura cai no 26AP00, que precisa fechar zerado.
+// Custo do mês é dividido entre os projetos autorizados na proporção do ingresso real; meta: até 3% do ingresso.
+var TIPOS26 = ['Pessoal próprio', 'Transferência de custo recebida', 'Software / licenças', 'Monitores', 'Coworking', 'Provisão', 'Viagens / passagens', 'Diversos'];
+var ST26 = ['Aprovado', 'A investigar', 'Pendente'];
+function r26(ym){
+  E.r26 = E.r26 || {};
+  return E.r26[ym] = E.r26[ym] || { custos: [], sistema: null, meta: 3, base: [] };
+}
+function ingBase(c, M){
+  var l = E.retratos.filter(function(r){ return r.codigo === c; });
+  var real = l.filter(function(r){ return r.flags[M] === 'REAL' && mesPR(r) > M; }).sort(function(a, b){ return RANK[tipo(a)] - RANK[tipo(b)]; })[0];
+  if (real) return { v: real.linhas.ingresso[M], f: rotFonte(real) + ' (real)' };
+  var pc = l.filter(function(r){ return mesPR(r) === M; }).sort(function(a, b){ return PREF_PROM.indexOf(tipo(a)) - PREF_PROM.indexOf(tipo(b)); })[0];
+  if (pc) return { v: pc.linhas.ingresso[M], f: rotFonte(pc) + ' (previsto)' };
+  return null;
+}
+function calc26(R, M){
+  var custo = R.custos.reduce(function(s, c){ return s + (c.v || 0); }, 0);
+  var base = R.base.filter(function(b){ return b.on !== false; }).map(function(b){ var ib = b.ing != null ? { v: b.ing, f: 'digitado' } : ingBase(b.c, M); return { b: b, ing: ib ? ib.v : 0, f: ib ? ib.f : 'sem ingresso', teto: b.teto }; });
+  base.forEach(function(q){ q.ing = Math.max(0, q.ing || 0); });
+  // distribui proporcional ao ingresso; quem tem teto (%) fica no teto e a sobra vai para os demais
+  var livres = base.slice(), resto = custo, fixos = [];
+  for (var it = 0; it < 10; it++) {
+    var ti = livres.reduce(function(s, q){ return s + q.ing; }, 0); if (!ti) break;
+    var estourou = livres.filter(function(q){ return q.teto != null && resto * q.ing / ti > q.ing * q.teto / 100 + 0.005; });
+    if (!estourou.length) { livres.forEach(function(q){ q.val = resto * q.ing / ti; }); break; }
+    estourou.forEach(function(q){ q.val = q.ing * q.teto / 100; q.noTeto = true; resto -= q.val; fixos.push(q); });
+    livres = livres.filter(function(q){ return estourou.indexOf(q) < 0; });
+  }
+  base.forEach(function(q){ if (q.val == null) q.val = 0; q.val = Math.round(q.val * 100) / 100; q.pct = q.ing ? q.val / q.ing : null; });
+  var dist = base.reduce(function(s, q){ return s + q.val; }, 0), ingT = base.reduce(function(s, q){ return s + q.ing; }, 0);
+  // ajuste de centavos no maior valor, para fechar exatamente
+  var dif = Math.round((custo - dist) * 100) / 100;
+  if (Math.abs(dif) > 0 && Math.abs(dif) < 1 && base.length) { var mx = base.reduce(function(a, q){ return q.val > a.val ? q : a; }); mx.val = Math.round((mx.val + dif) * 100) / 100; dist = custo; }
+  return { custo: custo, base: base, dist: dist, ingT: ingT, pct: ingT ? custo / ingT : null, saldo: Math.round((custo - dist) * 100) / 100, difSis: R.sistema == null ? null : Math.round((R.sistema - custo) * 100) / 100 };
+}
+var r26Edit = null;
+function desenhar26(xs){
+  var el = document.getElementById('r26Out'); if (!el) return;
+  var M = mesRef(), a = anoRef(), mr = rotMes(M, a), ym = ymRef(), R = r26(ym), C = calc26(R, M), meta = (R.meta || 3) / 100;
+  var ok = function(b){ return b ? 'ok' : 'bad'; };
+  var h = '<div class="small muted" style="margin-bottom:10px">Todo custo de estrutura cai no <b>26AP00</b>, que precisa fechar zerado. Lance aqui os custos do mês (inclusive as transferências de custo recebidas), marque os projetos que recebem rateio e a página divide na proporção do ingresso, gera o traspasso por projeto e EDT e confere a meta de ' + fmtN(R.meta) + '%.</div>';
+  h += '<div class="kpis">' +
+    '<div class="kpi"><div class="l">Custo do 26AP00 em ' + mr + '</div><div class="v">' + brl(C.custo) + '</div><div class="d">' + R.custos.length + ' lançamento(s)</div></div>' +
+    '<div class="kpi"><div class="l">Bate com o sistema?</div><div class="v ' + (C.difSis == null ? '' : ok(Math.abs(C.difSis) < 0.01)) + '">' + (C.difSis == null ? 'informe o total' : Math.abs(C.difSis) < 0.01 ? 'Sim, até o centavo' : sinal(C.difSis)) + '</div><div class="d">total no sistema: <input type="text" id="r26Sis" style="width:120px" value="' + (R.sistema != null ? fmtN(R.sistema) : '') + '" placeholder="análise de custos"></div></div>' +
+    '<div class="kpi"><div class="l">% sobre o ingresso</div><div class="v ' + (C.pct == null ? '' : ok(C.pct <= meta)) + '">' + (C.pct == null ? '—' : pct(C.pct)) + '</div><div class="d">meta até <input type="text" id="r26Meta" style="width:50px" value="' + fmtN(R.meta) + '">% · base ' + brl(C.ingT) + '</div></div>' +
+    '<div class="kpi"><div class="l">26AP00 depois do traspasso</div><div class="v ' + ok(Math.abs(C.saldo) < 0.01) + '">' + (Math.abs(C.saldo) < 0.01 ? 'Zerado' : brl(C.saldo)) + '</div><div class="d">' + (Math.abs(C.saldo) < 0.01 ? 'pode enviar o traspasso' : 'sobra sem projeto: confira a base') + '</div></div></div>';
+  // custos
+  var v = r26Edit != null ? R.custos[r26Edit] : {};
+  h += '<div class="card"><div class="tools" style="margin:0 0 8px"><b style="flex:1">Custos que caíram no 26AP00 em ' + mr + '</b><button id="r26Cola">Colar do Excel</button><button id="r26Fixos">Trazer os fixos do mês anterior</button></div>' +
+    '<div class="no-print" style="display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-bottom:10px">' +
+    '<label class="small">Data <input type="date" id="c26d" value="' + esc(v.d || '') + '"></label>' +
+    '<label class="small">Tipo <select id="c26t">' + TIPOS26.map(function(t){ return '<option' + (v.t === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label>' +
+    '<label class="small">Descrição <input type="text" id="c26x" style="width:240px" value="' + esc(v.x || '') + '" placeholder="ex.: pessoa, licença"></label>' +
+    '<label class="small">Valor (R$) <input type="text" id="c26v" style="width:110px" value="' + (v.v != null ? fmtN(v.v) : '') + '"></label>' +
+    '<label class="small">Situação <select id="c26s">' + ST26.map(function(t){ return '<option' + (v.s === t ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></label>' +
+    '<label class="small"><input type="checkbox" id="c26f"' + (v.fixo ? ' checked' : '') + '> fixo todo mês</label>' +
+    '<button class="primary" id="c26ok">' + (r26Edit != null ? 'Salvar' : 'Lançar') + '</button>' + (r26Edit != null ? '<button id="c26can">Cancelar</button>' : '') + '</div>';
+  if (R.custos.length) {
+    var porT = {}; R.custos.forEach(function(c){ porT[c.t] = (porT[c.t] || 0) + (c.v || 0); });
+    h += '<div class="small" style="margin-bottom:6px">' + Object.keys(porT).map(function(t){ return esc(t) + ': <b>' + brl(porT[t]) + '</b>'; }).join(' · ') + '</div>';
+    h += '<div class="scroll"><table><thead><tr><th>Data</th><th class="l">Tipo</th><th class="l">Descrição</th><th>Valor</th><th class="l">Situação</th><th></th></tr></thead><tbody>' +
+      R.custos.map(function(c, i){ return '<tr><td>' + (c.d ? c.d.slice(8, 10) + '/' + c.d.slice(5, 7) : '') + '</td><td class="l">' + esc(c.t) + (c.fixo ? ' <span class="pill p-wait">fixo</span>' : '') + '</td><td class="l">' + esc(c.x || '') + '</td><td>' + fmtN(c.v) + '</td><td class="l"><span class="pill ' + (c.s === 'Aprovado' ? 'p-ok' : c.s === 'A investigar' ? 'p-bad' : 'p-warn') + '">' + esc(c.s || '') + '</span></td><td><button class="link small" data-c26e="' + i + '">editar</button><button class="link small" data-c26x="' + i + '">tirar</button></td></tr>'; }).join('') + '</tbody></table></div>';
+  } else h += '<div class="empty">Nenhum custo lançado em ' + mr + '.</div>';
+  h += '</div>';
+  // base e traspasso
+  h += '<div class="card"><div class="tools" style="margin:0 0 8px"><b style="flex:1">Projetos que recebem o rateio e traspasso de ' + mr + '</b><button id="r26Add">+ Projeto</button><button id="r26ColaB">Colar projetos e EDTs</button><button id="r26CopB">Copiar do mês anterior</button><button class="primary" id="r26X">Baixar traspasso (Excel)</button></div>';
+  if (!R.base.length) h += '<div class="empty">Nenhum projeto na base. Use "Copiar do mês anterior" ou "Colar projetos e EDTs" (Código | EDT). Confirme a lista do mês com quem define os projetos.</div>';
+  else {
+    h += '<div class="scroll"><table><thead><tr><th>Entra?</th><th class="l">Projeto</th><th class="l">EDT</th><th>Ingresos ' + MES[M] + '</th><th class="l">De onde</th><th>Teto (%)</th><th>Valor do traspasso</th><th>% do ingresso</th><th></th></tr></thead><tbody>';
+    R.base.forEach(function(b, i){
+      var q = C.base.find(function(z){ return z.b === b; }), x = xs.find(function(y){ return y.c === b.c; });
+      h += '<tr' + (b.on === false ? ' class="muted"' : '') + '><td><input type="checkbox" data-b26on="' + i + '"' + (b.on !== false ? ' checked' : '') + '></td><td class="l"><b>' + b.c + '</b> <span class="small muted">' + esc((x && x.nome) || NOMES[b.c] || b.nome || '') + '</span></td>' +
+        '<td class="l"><input type="text" style="width:130px" data-b26="' + i + '|edt" value="' + esc(b.edt || '') + '"></td>' +
+        '<td><input type="text" style="width:120px" data-b26="' + i + '|ing" value="' + (b.ing != null ? fmtN(b.ing) : '') + '" placeholder="' + (q ? fmtN(q.ing) : '') + '"></td><td class="l small muted">' + (q ? esc(q.f) : '') + '</td>' +
+        '<td><input type="text" style="width:60px" data-b26="' + i + '|teto" value="' + (b.teto != null ? fmtN(b.teto) : '') + '"></td>' +
+        '<td><b>' + (q ? fmtN(q.val) : '—') + '</b>' + (q && q.noTeto ? '<div class="small warn">no teto</div>' : '') + '</td><td class="' + (q && q.pct != null && q.pct > meta + 1e-9 ? 'c-crit' : '') + '">' + (q && q.pct != null ? pct(q.pct) : '—') + '</td><td><button class="link small" data-b26x="' + i + '">tirar</button></td></tr>';
+    });
+    h += '</tbody></table></div><div class="orig">Ingresos: o real do mês (Cierre ou Prévia do Cierre) quando carregado; antes disso, o previsto (PréCierre ou PR), marcado como "previsto". Dá para digitar o ingresso à mão (ex.: o da aba Forecast Dash). Teto: limite em % do ingresso que o projeto aceita (ex.: o limite autorizado); a diferença vai para os demais. Os centavos de arredondamento vão para o maior valor, para o 26AP00 fechar exato.</div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
+  var red = function(){ salvar(); desenhar26(xs); };
+  document.getElementById('r26Sis').onchange = function(e){ R.sistema = nnum(e.target.value); red(); };
+  document.getElementById('r26Meta').onchange = function(e){ R.meta = nnum(e.target.value) || 3; red(); };
+  var g = function(id){ return document.getElementById(id); };
+  g('c26ok').onclick = function(){
+    var c = { d: g('c26d').value, t: g('c26t').value, x: g('c26x').value.trim(), v: nnum(g('c26v').value), s: g('c26s').value, fixo: g('c26f').checked };
+    if (c.v == null) { alert('Informe o valor.'); return; }
+    if (r26Edit != null) R.custos[r26Edit] = c; else R.custos.push(c); r26Edit = null; red();
+  };
+  if (g('c26can')) g('c26can').onclick = function(){ r26Edit = null; desenhar26(xs); };
+  el.querySelectorAll('[data-c26e]').forEach(function(b){ b.onclick = function(){ r26Edit = +b.dataset.c26e; desenhar26(xs); }; });
+  el.querySelectorAll('[data-c26x]').forEach(function(b){ b.onclick = function(){ if (confirm('Tirar este custo?')) { R.custos.splice(+b.dataset.c26x, 1); r26Edit = null; red(); } }; });
+  var mesAnt = M > 0 ? a + '-' + String(M).padStart(2, '0') : (a - 1) + '-12';
+  g('r26Fixos').onclick = function(){
+    var A = (E.r26 || {})[mesAnt]; var fx = A ? A.custos.filter(function(c){ return c.fixo; }) : [];
+    if (!fx.length) { alert('Nenhum custo marcado como fixo em ' + ymRot(mesAnt) + '.'); return; }
+    fx.forEach(function(c){ R.custos.push({ d: '', t: c.t, x: c.x, v: c.v, s: 'Pendente', fixo: true }); }); red();
+  };
+  g('r26Cola').onclick = function(){
+    var t = prompt('Cole as linhas do Excel com as colunas: Data | Tipo | Descrição | Valor (Tipo pode ficar vazio).'); if (!t) return;
+    t.split(/\r?\n/).forEach(function(l){ var p = l.split('\t'); if (p.length < 2) return; var v = nnum(p[p.length - 1]); if (v == null) return;
+      var dd = normData(p[0], String(a)); R.custos.push({ d: dd, t: TIPOS26.indexOf((p[1] || '').trim()) >= 0 ? p[1].trim() : 'Diversos', x: (p.length > 3 ? p[2] : p[1] || '').trim(), v: v, s: 'Pendente' }); });
+    red();
+  };
+  g('r26Add').onclick = function(){ var c = (prompt('Código do projeto (ex.: 26AP01):') || '').toUpperCase().match(/\d{2}AP\d{2}/); if (!c) return; if (!R.base.some(function(b){ return b.c === c[0]; })) R.base.push({ c: c[0], edt: '' }); red(); };
+  g('r26ColaB').onclick = function(){
+    var t = prompt('Cole as linhas do Excel: Código | EDT | Ingresso (o ingresso é opcional).'); if (!t) return;
+    t.split(/\r?\n/).forEach(function(l){ var p = l.split('\t'), c = (p[0] || '').toUpperCase().match(/\d{2}AP\d{2}/); if (!c) return;
+      var b = R.base.find(function(z){ return z.c === c[0]; }); if (!b) { b = { c: c[0] }; R.base.push(b); }
+      if (p[1]) b.edt = p[1].trim(); if (p[2] && nnum(p[2]) != null) b.ing = nnum(p[2]); });
+    red();
+  };
+  g('r26CopB').onclick = function(){
+    var A = (E.r26 || {})[mesAnt]; if (!A || !A.base.length) { alert('Não há base em ' + ymRot(mesAnt) + '.'); return; }
+    if (R.base.length && !confirm('Trocar os projetos de ' + mr + ' pelos de ' + ymRot(mesAnt) + '? (EDTs e tetos vêm junto; ingressos digitados não.)')) return;
+    R.base = A.base.map(function(b){ return { c: b.c, edt: b.edt, teto: b.teto, on: b.on }; }); red();
+  };
+  el.querySelectorAll('[data-b26on]').forEach(function(i){ i.onchange = function(){ R.base[+i.dataset.b26on].on = i.checked; red(); }; });
+  el.querySelectorAll('[data-b26]').forEach(function(i){ i.onchange = function(){ var k = i.dataset.b26.split('|'), b = R.base[+k[0]]; if (k[1] === 'edt') b.edt = i.value.trim(); else { b[k[1]] = nnum(i.value); if (b[k[1]] == null) delete b[k[1]]; } red(); }; });
+  el.querySelectorAll('[data-b26x]').forEach(function(b){ b.onclick = function(){ R.base.splice(+b.dataset.b26x, 1); red(); }; });
+  g('r26X').onclick = function(){
+    if (Math.abs(C.saldo) >= 0.01 && !confirm('O 26AP00 ainda não fecha zerado (' + brl(C.saldo) + '). Baixar mesmo assim?')) return;
+    var rows = C.base.filter(function(q){ return q.val; }).map(function(q){ return { 'Projeto': q.b.c, 'EDT': q.b.edt || '', 'Valor': q.val, 'Ingresos do mês': Math.round(q.ing * 100) / 100, '% do ingresso': q.pct == null ? null : Math.round(q.pct * 10000) / 100 }; });
+    rows.push({ 'Projeto': '26AP00', 'EDT': '', 'Valor': -Math.round(C.dist * 100) / 100 });
+    var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Traspasso ' + MES[M]);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(R.custos.map(function(c){ return { 'Data': c.d, 'Tipo': c.t, 'Descrição': c.x, 'Valor': c.v, 'Situação': c.s }; })), 'Custos 26AP00');
+    XLSX.writeFile(wb, 'Traspasso 26AP00 ' + MES[M] + '-' + a + '.xlsx');
+  };
+}
+
 // ================= geral =================
 function irAba(t){
   document.querySelectorAll('#tabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.t === t); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.toggle('on', p.id === 'p-' + t); });
-  document.getElementById('filtros').style.display = (t === 'cal' || t === 'arq') ? 'none' : '';
+  document.getElementById('filtros').style.display = (t === 'cal' || t === 'arq' || t === 'r26') ? 'none' : '';
   try { localStorage.setItem(CHAVE + '.aba', t); } catch(x) {}
 }
 function desenhar(){
   var todos = analisar(), xs = filtrar(todos);
-  montarFiltros(todos); desenharAvisos(todos); desenharCart(xs); desenharPrev(xs); desenharRel(xs); desenharRes(xs); desenharDPF(xs); desenharIng(xs); desenharCal(); desenharArq(); infoPasta();
+  montarMesRef(); montarFiltros(todos); desenharAvisos(todos); desenharComp(xs); desenharFC(xs); desenharRateio(xs); desenharTransf(xs); desenhar26(todos); desenharCart(xs); desenharPrev(xs); desenharRel(xs); desenharRes(xs); desenharDPF(xs); desenharIng(xs); desenharCal(); desenharArq(); infoPasta();
 }
 document.getElementById('tabs').onclick = function(ev){ var t = ev.target.dataset.t; if (t) irAba(t); };
 document.getElementById('bAtualizar').onclick = atualizarDaPasta;
